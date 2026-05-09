@@ -19,7 +19,15 @@ export function PinsPage() {
   });
 
   const copyAll = () => {
-    const text = members.map((m) => `${m.name}: ${m.pin ?? '-'}`).join('\n');
+    const text = members
+      .map((m) => {
+        const pinLabel =
+          m.pinStoredSecurely && !m.pin
+            ? '(서버에만 저장됨 — 재설정 후 새 PIN 공유)'
+            : (m.pin ?? '-');
+        return `${m.name}: ${pinLabel}`;
+      })
+      .join('\n');
     navigator.clipboard.writeText(text);
     alert('전체 PIN 목록이 클립보드에 복사되었습니다.\n학생들에게 공유하세요.');
   };
@@ -102,7 +110,9 @@ function PinRow({
           />
         ) : (
           <code className="bg-gray-100 px-2 py-1 rounded text-sm">
-            {member.pin ?? '(미설정)'}
+            {member.pinStoredSecurely && !member.pin
+              ? '(안전하게 저장됨)'
+              : (member.pin ?? '(미설정)')}
           </code>
         )}
       </td>

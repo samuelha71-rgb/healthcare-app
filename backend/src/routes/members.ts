@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { prisma } from '../prisma';
 import { asyncHandler, HttpError } from '../middleware/error';
 import { ensureSelfOrAdmin, requireAdmin, requireAuth } from '../middleware/auth';
+import { hashPin, memberForAdminResponse } from '../utils/pin';
 
 export const membersRouter = Router();
 
@@ -23,7 +24,7 @@ membersRouter.get(
   requireAdmin,
   asyncHandler(async (_req, res) => {
     const members = await prisma.member.findMany({ orderBy: { joinedAt: 'asc' } });
-    res.json(members);
+    res.json(members.map((m) => memberForAdminResponse(m)));
   }),
 );
 
@@ -56,10 +57,11 @@ membersRouter.get(
       prisma.photo.count({ where: { memberId: id } }),
     ]);
 
-    // PIN은 학생 응답에서 제외 (관리자에게만 보임)
+    // PIN은 학생 응답에서 제외 (관리자에게만 표시 — 해시 저장 시에는 내용 미표시)
     const { pin, ...rest } = member;
+    const adminPayload = memberForAdminResponse(member);
     res.json({
-      ...(req.auth?.role === 'admin' ? member : rest),
+      ...(req.auth?.role === 'admin' ? adminPayload : rest),
       stats: { logCount, lastLog, inbodyCount, photoCount },
     });
   }),
@@ -72,8 +74,10 @@ membersRouter.post(
   requireAdmin,
   asyncHandler(async (req, res) => {
     const data = memberInput.required({ pin: true }).parse(req.body);
-    const member = await prisma.member.create({ data });
-    res.status(201).json(member);
+    const member = await prisma.member.create({
+      data: { ...data, pin: await hashPin(data.pin) },
+    });
+    res.status(201).json(memberForAdminResponse(member));
   }),
 );
 
@@ -84,9 +88,13 @@ membersRouter.patch(
   requireAdmin,
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    const data = memberInput.partial().parse(req.body);
+    const parsed = memberInput.partial().parse(req.body);
+    const data =
+      parsed.pin !== undefined
+        ? { ...parsed, pin: parsed.pin ? await hashPin(parsed.pin) : parsed.pin }
+        : parsed;
     const member = await prisma.member.update({ where: { id }, data });
-    res.json(member);
+    res.json(memberForAdminResponse(member));
   }),
 );
 

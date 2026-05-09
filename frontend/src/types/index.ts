@@ -4,6 +4,8 @@ export interface Member {
   id: number;
   name: string;
   pin?: string;
+  /** 서버에 bcrypt로만 저장된 경우 true — pin 필드는 내려오지 않음 */
+  pinStoredSecurely?: boolean;
   age?: number | null;
   gender?: 'male' | 'female' | 'other' | null;
   height?: number | null;

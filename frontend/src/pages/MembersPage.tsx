@@ -61,8 +61,13 @@ export function MembersPage() {
                     {m.age ? ` · ${m.age}세` : ''}
                     {m.height ? ` · ${m.height}cm` : ''}
                   </p>
-                  {m.pin && (
-                    <p className="text-xs text-gray-400 mt-1">PIN: {m.pin}</p>
+                  {(m.pin || m.pinStoredSecurely) && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      PIN:{' '}
+                      {m.pinStoredSecurely && !m.pin
+                        ? '(안전하게 저장됨)'
+                        : m.pin}
+                    </p>
                   )}
                 </div>
               </div>

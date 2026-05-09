@@ -8,6 +8,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { HttpError } from './error';
+import { hashPin, isPinHashed, verifyPin } from '../utils/pin';
 
 export type Auth =
   | { role: 'admin' }
@@ -33,11 +34,23 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
         req.auth = { role: 'admin' };
       }
     } else if (token.startsWith('student:')) {
-      const [, idStr, pin] = token.split(':');
+      const parts = token.split(':');
+      if (parts.length < 3) {
+        next();
+        return;
+      }
+      const idStr = parts[1];
+      const pin = parts.slice(2).join(':');
       const id = Number(idStr);
       if (id && pin) {
         const member = await prisma.member.findUnique({ where: { id } });
-        if (member && member.pin === pin) {
+        if (member && (await verifyPin(pin, member.pin))) {
+          if (!isPinHashed(member.pin)) {
+            await prisma.member.update({
+              where: { id },
+              data: { pin: await hashPin(pin) },
+            });
+          }
           req.auth = { role: 'student', memberId: id };
         }
       }

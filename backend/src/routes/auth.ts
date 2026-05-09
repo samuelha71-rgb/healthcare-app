@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../prisma';
 import { asyncHandler, HttpError } from '../middleware/error';
+import { hashPin, isPinHashed, verifyPin } from '../utils/pin';
 
 export const authRouter = Router();
 
@@ -38,8 +39,14 @@ authRouter.post(
       .object({ memberId: z.number().int(), pin: z.string() })
       .parse(req.body);
     const member = await prisma.member.findUnique({ where: { id: memberId } });
-    if (!member || member.pin !== pin) {
+    if (!member || !(await verifyPin(pin, member.pin))) {
       throw new HttpError(401, 'PIN이 틀렸습니다');
+    }
+    if (!isPinHashed(member.pin)) {
+      await prisma.member.update({
+        where: { id: memberId },
+        data: { pin: await hashPin(pin) },
+      });
     }
     res.json({
       token: `student:${memberId}:${pin}`,

@@ -15,6 +15,7 @@
 ### 백엔드 (`backend/`)
 - Node.js + Express + TypeScript
 - Prisma ORM + PostgreSQL (`DATABASE_URL`)
+- 학생 PIN bcrypt 저장, `/api/auth` 요청 레이트 리밋
 - 사진은 파일 디스크가 아니라 DB에 base64로 저장 (호스팅 환경에서 업로드 디렉터리에 의존하지 않기 위함). 요청 본문 크기 제한은 서버에서 넉넉히 허용함.
 
 ## 폴더 구조
@@ -25,6 +26,7 @@ healthcare-app/
 │   ├── src/
 │   │   ├── routes/         # API 엔드포인트
 │   │   ├── middleware/     # 인증, 에러 처리
+│   │   ├── utils/          # 공통 유틸 (PIN 해시 등)
 │   │   └── prisma.ts       # Prisma 클라이언트
 │   ├── prisma/             # DB 스키마
 │   └── uploads/            # (선택) 로컬 예약용 — 현재 구현은 DB 저장
@@ -61,10 +63,18 @@ healthcare-app/
 | `DATABASE_URL` | PostgreSQL 연결 URL (Prisma) |
 | `ADMIN_PASSWORD` | 관리자 로그인 비밀번호 |
 | `PORT` | (선택) 기본값 `4000` |
+| `CORS_ORIGIN` | (선택) 허용 출처. 쉼표로 여러 개. 미설정 시 개발과 동일하게 모든 출처 허용 |
+| `AUTH_RATE_LIMIT_MAX` | (선택) `/api/auth/*` IP당 15분당 최대 요청 수. 기본 `300` |
 
 프론트 개발 서버는 `vite.config.ts`에서 `/api`를 백엔드로 프록시합니다.
 
 배포(Render 등)는 저장소 루트의 [`render.yaml`](./render.yaml)을 참고합니다.
+
+### 학생 PIN
+
+- 저장 시 bcrypt 해시만 DB에 보관합니다.
+- 예전에 평문으로 저장된 PIN은 **학생 로그인 또는 유효한 학생 토큰으로 첫 요청 시** 자동으로 해시로 바뀝니다 (동작은 동일).
+- 관리자 API 응답에서는 해시 문자열을 내리지 않고 `pinStoredSecurely` 플래그로 표시합니다.
 
 ## 실행 방법
 

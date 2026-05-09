@@ -2,6 +2,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import path from 'path';
 import fs from 'fs';
 
@@ -21,7 +22,30 @@ const app = express();
 const PORT = Number(process.env.PORT) || 4000;
 const isProd = process.env.NODE_ENV === 'production';
 
-app.use(cors());
+// Render 등 리버스 프록시 뒤에서 클라이언트 IP·레이트 리밋이 올바르게 동작하도록
+if (isProd) {
+  app.set('trust proxy', 1);
+}
+
+const corsOrigin = process.env.CORS_ORIGIN?.trim();
+if (corsOrigin) {
+  app.use(
+    cors({
+      origin: corsOrigin.split(',').map((s) => s.trim()),
+      credentials: true,
+    }),
+  );
+} else {
+  app.use(cors());
+}
+
+/** 로그인·학생 목록 API 무차별 시도 완화 (동작·응답 형식은 동일, 초과 시 429) */
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.AUTH_RATE_LIMIT_MAX ?? '300'),
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 // 사진을 base64로 받기 위해 큰 본문 허용
 app.use(express.json({ limit: '15mb' }));
 
@@ -29,7 +53,7 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
 app.use('/api', authenticate);
 
-app.use('/api/auth', authRouter);
+app.use('/api/auth', authRateLimiter, authRouter);
 app.use('/api/members', membersRouter);
 app.use('/api/routines', routinesRouter);
 app.use('/api/workout-logs', workoutLogsRouter);
