@@ -6,6 +6,7 @@ import { LoginPage } from './pages/LoginPage';
 import { HomeRedirect } from './pages/HomeRedirect';
 import { MembersPage } from './pages/MembersPage';
 import { MemberDetailPage } from './pages/MemberDetailPage';
+import { PinsPage } from './pages/PinsPage';
 import { RoutinesPage } from './pages/RoutinesPage';
 import { DailyLogPage } from './pages/DailyLogPage';
 import { ReportsPage } from './pages/ReportsPage';
@@ -28,6 +29,14 @@ function App() {
             element={
               <RequireAuth adminOnly>
                 <MembersPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/pins"
+            element={
+              <RequireAuth adminOnly>
+                <PinsPage />
               </RequireAuth>
             }
           />

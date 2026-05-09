@@ -1,11 +1,12 @@
 // 페이지 공통 레이아웃 — 역할별로 메뉴 다름
-import { NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { useAuth } from '@/auth/AuthContext';
 
 const ADMIN_NAV = [
   { to: '/', label: '대시보드', end: true },
   { to: '/members', label: '대상' },
+  { to: '/pins', label: 'PIN 관리' },
   { to: '/routines', label: '루틴' },
   { to: '/log', label: '오늘 기록' },
   { to: '/reports', label: '리포트' },
@@ -24,7 +25,9 @@ export function Layout() {
   return (
     <div className="min-h-screen flex">
       <aside className="w-56 bg-white border-r border-gray-200 p-4 flex flex-col print:hidden">
-        <div className="font-bold text-lg mb-1">🏋️ Healthcare</div>
+        <Link to="/" className="font-bold text-lg mb-1 hover:opacity-70 transition">
+          🏋️ Healthcare
+        </Link>
         <div className="text-xs text-gray-500 mb-6">
           {user?.role === 'admin' ? '관리자' : user?.name}
         </div>
