@@ -38,7 +38,13 @@ membersRouter.get(
       where: { id },
       include: {
         goals: true,
-        routineAssignments: { include: { routine: true } },
+        routineAssignments: {
+          include: {
+            routine: {
+              include: { exercises: { orderBy: { orderIndex: 'asc' } } },
+            },
+          },
+        },
       },
     });
     if (!member) throw new HttpError(404, 'Member not found');

@@ -41,7 +41,10 @@ routinesRouter.get(
       return;
     }
     const routines = await prisma.routine.findMany({
-      include: { exercises: { orderBy: { orderIndex: 'asc' } } },
+      include: {
+        exercises: { orderBy: { orderIndex: 'asc' } },
+        assignments: { include: { member: { select: { id: true, name: true } } } },
+      },
       orderBy: { id: 'asc' },
     });
     res.json(routines);

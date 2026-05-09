@@ -15,7 +15,11 @@ export interface Member {
 
 export interface MemberDetail extends Member {
   goals: Goal[];
-  routineAssignments: { routine: Routine; routineId: number; memberId: number }[];
+  routineAssignments: Array<{
+    routineId: number;
+    memberId: number;
+    routine: Routine;
+  }>;
   stats: {
     logCount: number;
     lastLog: WorkoutLog | null;
@@ -44,6 +48,7 @@ export interface Routine {
   instructions?: string | null;
   cautions?: string | null;
   exercises: RoutineExercise[];
+  assignments?: { memberId: number; routineId: number; member: { id: number; name: string } }[];
 }
 
 export interface ExerciseSet {

@@ -10,7 +10,6 @@ import {
   Input,
   Label,
   Modal,
-  Select,
   Textarea,
 } from '@/components/ui';
 import type { Routine } from '@/types';
@@ -37,11 +36,6 @@ export function RoutinesPage() {
 
   const remove = useMutation({
     mutationFn: routinesApi.remove,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['routines'] }),
-  });
-  const assign = useMutation({
-    mutationFn: ({ routineId, memberId }: { routineId: number; memberId: number }) =>
-      routinesApi.assign(routineId, memberId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['routines'] }),
   });
 
@@ -142,27 +136,20 @@ export function RoutinesPage() {
                 </div>
               )}
 
-              {isAdmin && members.length > 0 && (
-                <div className="mt-4 flex items-center gap-2 text-sm">
-                  <span className="text-gray-500">대상에게 배정:</span>
-                  <Select
-                    className="!w-auto"
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        assign.mutate({ routineId: r.id, memberId: Number(e.target.value) });
-                        e.target.value = '';
-                      }
-                    }}
-                    defaultValue=""
-                  >
-                    <option value="">대상 선택</option>
-                    {members.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </Select>
+              {r.assignments && r.assignments.length > 0 && (
+                <div className="mt-4 flex items-center gap-2 flex-wrap text-sm">
+                  <span className="text-gray-500">배정:</span>
+                  {r.assignments.map((a) => (
+                    <Badge key={a.memberId} color="green">
+                      {a.member.name}
+                    </Badge>
+                  ))}
                 </div>
+              )}
+              {isAdmin && r.assignments && r.assignments.length === 0 && (
+                <p className="mt-4 text-xs text-gray-400">
+                  배정된 학생 없음 — 수정 버튼에서 학생을 선택하세요
+                </p>
               )}
             </Card>
           ))}
@@ -171,12 +158,14 @@ export function RoutinesPage() {
 
       <RoutineFormModal
         open={showAdd}
+        members={members}
         onClose={() => setShowAdd(false)}
         onDone={() => qc.invalidateQueries({ queryKey: ['routines'] })}
       />
       <RoutineFormModal
         open={!!editing}
         routine={editing ?? undefined}
+        members={members}
         onClose={() => setEditing(null)}
         onDone={() => qc.invalidateQueries({ queryKey: ['routines'] })}
       />
@@ -189,17 +178,22 @@ function RoutineFormModal({
   onClose,
   onDone,
   routine,
+  members,
 }: {
   open: boolean;
   onClose: () => void;
   onDone: () => void;
   routine?: Routine;
+  members: { id: number; name: string }[];
 }) {
   const [name, setName] = useState(routine?.name ?? '');
   const [weekdays, setWeekdays] = useState<number[]>(routine?.weekdays ?? []);
   const [description, setDescription] = useState(routine?.description ?? '');
   const [instructions, setInstructions] = useState(routine?.instructions ?? '');
   const [cautions, setCautions] = useState(routine?.cautions ?? '');
+  const [memberIds, setMemberIds] = useState<number[]>(
+    routine?.assignments?.map((a) => a.memberId) ?? [],
+  );
   const [exercises, setExercises] = useState<RoutineInput['exercises']>(
     routine?.exercises.map((e) => ({
       exerciseName: e.exerciseName,
@@ -213,7 +207,7 @@ function RoutineFormModal({
   );
 
   const save = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const data: RoutineInput = {
         name,
         weekdays,
@@ -222,7 +216,20 @@ function RoutineFormModal({
         cautions: cautions || null,
         exercises,
       };
-      return routine ? routinesApi.update(routine.id, data) : routinesApi.create(data);
+      const saved = routine
+        ? await routinesApi.update(routine.id, data)
+        : await routinesApi.create(data);
+
+      // 배정 동기화 — 추가된 학생은 assign, 제거된 학생은 unassign
+      const before = new Set(routine?.assignments?.map((a) => a.memberId) ?? []);
+      const after = new Set(memberIds);
+      const toAdd = [...after].filter((id) => !before.has(id));
+      const toRemove = [...before].filter((id) => !after.has(id));
+      await Promise.all([
+        ...toAdd.map((id) => routinesApi.assign(saved.id, id)),
+        ...toRemove.map((id) => routinesApi.unassign(saved.id, id)),
+      ]);
+      return saved;
     },
     onSuccess: () => {
       onDone();
@@ -304,6 +311,43 @@ function RoutineFormModal({
             value={cautions ?? ''}
             onChange={(e) => setCautions(e.target.value)}
           />
+        </div>
+
+        <div>
+          <Label>이 루틴을 받을 학생 (복수 선택)</Label>
+          {members.length === 0 ? (
+            <p className="text-xs text-gray-500">
+              등록된 학생이 없습니다. 먼저 대상 메뉴에서 학생을 추가하세요.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {members.map((m) => {
+                const checked = memberIds.includes(m.id);
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() =>
+                      setMemberIds((curr) =>
+                        checked ? curr.filter((id) => id !== m.id) : [...curr, m.id],
+                      )
+                    }
+                    className={
+                      'px-3 py-1.5 rounded-lg text-sm font-medium border transition ' +
+                      (checked
+                        ? 'bg-indigo-600 border-indigo-600 text-white'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50')
+                    }
+                  >
+                    {m.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <p className="text-xs text-gray-500 mt-1">
+            선택한 학생의 페이지에 이 루틴이 자동으로 표시됩니다.
+          </p>
         </div>
 
         <div>
