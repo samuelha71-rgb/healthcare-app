@@ -1,0 +1,360 @@
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { routinesApi, type RoutineInput } from '@/api/routines';
+import { membersApi } from '@/api/members';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Input,
+  Label,
+  Modal,
+  Select,
+  Textarea,
+} from '@/components/ui';
+import type { Routine } from '@/types';
+import { WEEKDAY_LABELS } from '@/types';
+import { useAuth } from '@/auth/AuthContext';
+
+export function RoutinesPage() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
+  const { data: routines = [] } = useQuery({
+    queryKey: ['routines'],
+    queryFn: routinesApi.list,
+  });
+  const { data: members = [] } = useQuery({
+    queryKey: ['members'],
+    queryFn: membersApi.list,
+    enabled: isAdmin,
+  });
+
+  const [editing, setEditing] = useState<Routine | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+
+  const remove = useMutation({
+    mutationFn: routinesApi.remove,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['routines'] }),
+  });
+  const assign = useMutation({
+    mutationFn: ({ routineId, memberId }: { routineId: number; memberId: number }) =>
+      routinesApi.assign(routineId, memberId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['routines'] }),
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{isAdmin ? '주간 루틴' : '내 루틴'}</h1>
+        {isAdmin && <Button onClick={() => setShowAdd(true)}>+ 루틴 추가</Button>}
+      </div>
+
+      {routines.length === 0 ? (
+        <Card>
+          <EmptyState
+            title={isAdmin ? '루틴이 없습니다' : '아직 배정된 루틴이 없습니다'}
+            description={
+              isAdmin ? '요일별 운동 프로그램을 만들어보세요.' : '관리자가 루틴을 배정해주면 여기에 표시됩니다.'
+            }
+            action={isAdmin ? <Button onClick={() => setShowAdd(true)}>루틴 추가</Button> : undefined}
+          />
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {routines.map((r) => (
+            <Card key={r.id}>
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-semibold text-lg">{r.name}</h2>
+                    <Badge color="blue">
+                      {r.weekday >= 0 ? WEEKDAY_LABELS[r.weekday] + '요일' : '요일 무관'}
+                    </Badge>
+                  </div>
+                  {r.description && <p className="text-sm text-gray-600 mt-1">{r.description}</p>}
+                </div>
+                {isAdmin && (
+                  <div className="flex gap-2">
+                    <Button variant="secondary" onClick={() => setEditing(r)}>
+                      수정
+                    </Button>
+                    <Button
+                      variant="danger"
+                      onClick={() => {
+                        if (confirm('루틴을 삭제할까요?')) remove.mutate(r.id);
+                      }}
+                    >
+                      삭제
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {r.instructions && (
+                <div className="mt-3 text-sm">
+                  <p className="font-medium text-gray-700">방법</p>
+                  <p className="text-gray-600 whitespace-pre-line">{r.instructions}</p>
+                </div>
+              )}
+              {r.cautions && (
+                <div className="mt-2 text-sm">
+                  <p className="font-medium text-red-700">주의사항</p>
+                  <p className="text-red-600 whitespace-pre-line">{r.cautions}</p>
+                </div>
+              )}
+
+              {r.exercises.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-gray-700 mb-2">운동 목록</p>
+                  <ul className="space-y-1.5">
+                    {r.exercises.map((ex) => (
+                      <li key={ex.id} className="text-sm border-l-2 border-indigo-200 pl-3">
+                        <div className="font-medium">
+                          {ex.exerciseName}
+                          {ex.targetSets && (
+                            <span className="text-gray-500 font-normal ml-2">
+                              {ex.targetSets}세트 × {ex.targetReps ?? '-'}회
+                              {ex.targetWeight ? ` @ ${ex.targetWeight}kg` : ''}
+                            </span>
+                          )}
+                        </div>
+                        {ex.instructions && (
+                          <p className="text-gray-600 text-xs mt-0.5">{ex.instructions}</p>
+                        )}
+                        {ex.cautions && (
+                          <p className="text-red-600 text-xs mt-0.5">⚠ {ex.cautions}</p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {isAdmin && members.length > 0 && (
+                <div className="mt-4 flex items-center gap-2 text-sm">
+                  <span className="text-gray-500">대상에게 배정:</span>
+                  <Select
+                    className="!w-auto"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        assign.mutate({ routineId: r.id, memberId: Number(e.target.value) });
+                        e.target.value = '';
+                      }
+                    }}
+                    defaultValue=""
+                  >
+                    <option value="">대상 선택</option>
+                    {members.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <RoutineFormModal
+        open={showAdd}
+        onClose={() => setShowAdd(false)}
+        onDone={() => qc.invalidateQueries({ queryKey: ['routines'] })}
+      />
+      <RoutineFormModal
+        open={!!editing}
+        routine={editing ?? undefined}
+        onClose={() => setEditing(null)}
+        onDone={() => qc.invalidateQueries({ queryKey: ['routines'] })}
+      />
+    </div>
+  );
+}
+
+function RoutineFormModal({
+  open,
+  onClose,
+  onDone,
+  routine,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onDone: () => void;
+  routine?: Routine;
+}) {
+  const [name, setName] = useState(routine?.name ?? '');
+  const [weekday, setWeekday] = useState(routine?.weekday ?? -1);
+  const [description, setDescription] = useState(routine?.description ?? '');
+  const [instructions, setInstructions] = useState(routine?.instructions ?? '');
+  const [cautions, setCautions] = useState(routine?.cautions ?? '');
+  const [exercises, setExercises] = useState<RoutineInput['exercises']>(
+    routine?.exercises.map((e) => ({
+      exerciseName: e.exerciseName,
+      targetSets: e.targetSets,
+      targetReps: e.targetReps,
+      targetWeight: e.targetWeight,
+      instructions: e.instructions,
+      cautions: e.cautions,
+      orderIndex: e.orderIndex,
+    })) ?? [],
+  );
+
+  const save = useMutation({
+    mutationFn: () => {
+      const data: RoutineInput = {
+        name,
+        weekday,
+        description: description || null,
+        instructions: instructions || null,
+        cautions: cautions || null,
+        exercises,
+      };
+      return routine ? routinesApi.update(routine.id, data) : routinesApi.create(data);
+    },
+    onSuccess: () => {
+      onDone();
+      onClose();
+    },
+  });
+
+  const updateEx = (i: number, patch: Partial<NonNullable<typeof exercises>[number]>) => {
+    setExercises((curr) => curr!.map((e, idx) => (idx === i ? { ...e, ...patch } : e)));
+  };
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={routine ? '루틴 수정' : '루틴 추가'}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            취소
+          </Button>
+          <Button onClick={() => save.mutate()} disabled={!name}>
+            저장
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <div>
+          <Label>이름 *</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div>
+          <Label>요일</Label>
+          <Select value={weekday} onChange={(e) => setWeekday(Number(e.target.value))}>
+            <option value={-1}>요일 무관</option>
+            {WEEKDAY_LABELS.map((w, i) => (
+              <option key={i} value={i}>
+                {w}요일
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div>
+          <Label>설명</Label>
+          <Input value={description ?? ''} onChange={(e) => setDescription(e.target.value)} />
+        </div>
+        <div>
+          <Label>방법</Label>
+          <Textarea
+            rows={2}
+            value={instructions ?? ''}
+            onChange={(e) => setInstructions(e.target.value)}
+          />
+        </div>
+        <div>
+          <Label>주의사항</Label>
+          <Textarea
+            rows={2}
+            value={cautions ?? ''}
+            onChange={(e) => setCautions(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <Label>운동 목록</Label>
+            <Button
+              variant="ghost"
+              onClick={() =>
+                setExercises([
+                  ...(exercises ?? []),
+                  { exerciseName: '', orderIndex: (exercises?.length ?? 0) },
+                ])
+              }
+            >
+              + 추가
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {(exercises ?? []).map((ex, i) => (
+              <div key={i} className="border rounded-lg p-3 space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="운동 이름"
+                    value={ex.exerciseName}
+                    onChange={(e) => updateEx(i, { exerciseName: e.target.value })}
+                  />
+                  <Button
+                    variant="ghost"
+                    onClick={() =>
+                      setExercises((exercises ?? []).filter((_, idx) => idx !== i))
+                    }
+                  >
+                    ×
+                  </Button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <Input
+                    type="number"
+                    placeholder="세트"
+                    value={ex.targetSets ?? ''}
+                    onChange={(e) =>
+                      updateEx(i, { targetSets: e.target.value ? Number(e.target.value) : null })
+                    }
+                  />
+                  <Input
+                    type="number"
+                    placeholder="횟수"
+                    value={ex.targetReps ?? ''}
+                    onChange={(e) =>
+                      updateEx(i, { targetReps: e.target.value ? Number(e.target.value) : null })
+                    }
+                  />
+                  <Input
+                    type="number"
+                    step="0.5"
+                    placeholder="무게(kg)"
+                    value={ex.targetWeight ?? ''}
+                    onChange={(e) =>
+                      updateEx(i, {
+                        targetWeight: e.target.value ? Number(e.target.value) : null,
+                      })
+                    }
+                  />
+                </div>
+                <Input
+                  placeholder="방법 (자세, 호흡 등)"
+                  value={ex.instructions ?? ''}
+                  onChange={(e) => updateEx(i, { instructions: e.target.value })}
+                />
+                <Input
+                  placeholder="주의사항"
+                  value={ex.cautions ?? ''}
+                  onChange={(e) => updateEx(i, { cautions: e.target.value })}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}

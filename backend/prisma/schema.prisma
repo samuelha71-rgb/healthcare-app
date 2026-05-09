@@ -1,0 +1,151 @@
+// Prisma 스키마 — DB 구조 정의
+// 변경 후: `npx prisma migrate dev --name <설명>` 실행하면 DB에 반영됩니다.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 대상(참여자)
+model Member {
+  id        Int       @id @default(autoincrement())
+  name      String
+  pin       String    // 학생 로그인용 PIN (관리자가 지정)
+  age       Int?
+  gender    String?   // "male" | "female" | "other"
+  height    Float?    // cm
+  memo      String?
+  joinedAt  DateTime  @default(now())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  workoutLogs   WorkoutLog[]
+  inbodyRecords InbodyRecord[]
+  photos        Photo[]
+  goals         Goal[]
+  routineAssignments RoutineAssignment[]
+}
+
+// 운동 루틴 (요일별 프로그램)
+model Routine {
+  id          Int      @id @default(autoincrement())
+  name        String              // "초보자 상체", "전신 분할" 등
+  description String?
+  weekday     Int                 // 0=일 ... 6=토, -1=요일 무관
+  instructions String?            // 방법 설명
+  cautions    String?             // 주의사항
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  exercises   RoutineExercise[]
+  assignments RoutineAssignment[]
+}
+
+// 루틴에 포함된 운동들
+model RoutineExercise {
+  id            Int     @id @default(autoincrement())
+  routineId     Int
+  exerciseName  String              // "벤치프레스"
+  targetSets    Int?
+  targetReps    Int?
+  targetWeight  Float?
+  instructions  String?             // 자세/방법
+  cautions      String?             // 주의점
+  orderIndex    Int     @default(0)
+
+  routine       Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+}
+
+// 대상 ↔ 루틴 배정
+model RoutineAssignment {
+  id        Int      @id @default(autoincrement())
+  memberId  Int
+  routineId Int
+  startedAt DateTime @default(now())
+
+  member  Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  routine Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, routineId])
+}
+
+// 일일 운동 기록
+model WorkoutLog {
+  id         Int      @id @default(autoincrement())
+  memberId   Int
+  date       DateTime                // 운동한 날짜
+  condition  Int?                    // 1~5 컨디션
+  rpe        Int?                    // 1~10 운동 강도 체감
+  painArea   String?                 // 통증 부위
+  note       String?                 // 자유 메모
+  createdAt  DateTime @default(now())
+
+  member     Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  sets       ExerciseSet[]
+
+  @@index([memberId, date])
+}
+
+// 세트별 수행 기록 (점진적 과부하 추적)
+model ExerciseSet {
+  id            Int    @id @default(autoincrement())
+  workoutLogId  Int
+  exerciseName  String
+  setNumber     Int
+  weight        Float?
+  reps          Int?
+
+  workoutLog    WorkoutLog @relation(fields: [workoutLogId], references: [id], onDelete: Cascade)
+}
+
+// 인바디 측정 기록
+model InbodyRecord {
+  id          Int      @id @default(autoincrement())
+  memberId    Int
+  date        DateTime
+  weight      Float?   // kg
+  bodyFat     Float?   // %
+  muscleMass  Float?   // kg
+  bmi         Float?
+  note        String?
+  createdAt   DateTime @default(now())
+
+  member      Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId, date])
+}
+
+// 사진 기록 (Before/After 비교)
+// 이미지는 프론트에서 압축 후 base64 데이터 URL로 DB에 저장 (디스크 영속성 문제 회피)
+model Photo {
+  id        Int      @id @default(autoincrement())
+  memberId  Int
+  date      DateTime
+  data      String              // data:image/jpeg;base64,...
+  mime      String              // image/jpeg, image/png 등
+  caption   String?
+  createdAt DateTime @default(now())
+
+  member    Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId, date])
+}
+
+// 목표
+model Goal {
+  id           Int      @id @default(autoincrement())
+  memberId     Int
+  type         String              // "weight" | "bodyFat" | "muscleMass" | "lift" | "custom"
+  description  String
+  targetValue  Float?
+  currentValue Float?
+  deadline     DateTime?
+  achieved     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  member       Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}

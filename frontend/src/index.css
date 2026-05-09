@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+:root {
+  font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Pretendard", sans-serif;
+  color-scheme: light;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #f7f8fa;
+  color: #1a1a1a;
+}

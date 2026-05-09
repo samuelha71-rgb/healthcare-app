@@ -1,0 +1,21 @@
+# Render 배포 설정
+# https://render.com/docs/blueprint-spec
+#
+# 이 파일을 보고 Render가 자동으로 서비스를 만듭니다.
+# 환경변수 DATABASE_URL, ADMIN_PASSWORD는 Render 대시보드에서 직접 입력합니다.
+
+services:
+  - type: web
+    name: healthcare-app
+    runtime: node
+    plan: free
+    region: singapore # 한국에서 가장 가까운 무료 리전
+    buildCommand: "cd backend && npm install && cd ../frontend && npm install && npm run build && cd ../backend && npm run build && npx prisma db push --skip-generate --accept-data-loss"
+    startCommand: "cd backend && npm run start"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # 대시보드에서 입력
+      - key: ADMIN_PASSWORD
+        sync: false # 대시보드에서 입력 (1004)
