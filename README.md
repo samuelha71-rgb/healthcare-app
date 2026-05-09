@@ -14,8 +14,8 @@
 
 ### 백엔드 (`backend/`)
 - Node.js + Express + TypeScript
-- Prisma ORM + SQLite
-- Multer (사진 업로드)
+- Prisma ORM + PostgreSQL (`DATABASE_URL`)
+- 사진은 파일 디스크가 아니라 DB에 base64로 저장 (호스팅 환경에서 업로드 디렉터리에 의존하지 않기 위함). 요청 본문 크기 제한은 서버에서 넉넉히 허용함.
 
 ## 폴더 구조
 
@@ -24,12 +24,10 @@ healthcare-app/
 ├── backend/        # API 서버
 │   ├── src/
 │   │   ├── routes/         # API 엔드포인트
-│   │   ├── controllers/    # 요청 처리
-│   │   ├── services/       # 비즈니스 로직
-│   │   ├── middleware/     # 공통 처리(에러, 업로드)
-│   │   └── utils/
+│   │   ├── middleware/     # 인증, 에러 처리
+│   │   └── prisma.ts       # Prisma 클라이언트
 │   ├── prisma/             # DB 스키마
-│   └── uploads/            # 업로드된 사진
+│   └── uploads/            # (선택) 로컬 예약용 — 현재 구현은 DB 저장
 └── frontend/       # 웹 화면
     └── src/
         ├── components/     # 재사용 UI
@@ -53,6 +51,20 @@ healthcare-app/
 8. **에러 처리는 미들웨어에서 일관되게** — 라우트 안에서 `try/catch` 흩뿌리지 않기
 9. **환경변수는 `.env`** — 코드에 비밀값 하드코딩 금지
 10. **커밋 전 lint/format 통과** (ESLint + Prettier)
+
+## 환경 변수 (`backend/.env`)
+
+로컬에서 백엔드를 띄우려면 PostgreSQL 연결 문자열과 관리자 비밀번호가 필요합니다.
+
+| 변수 | 설명 |
+|------|------|
+| `DATABASE_URL` | PostgreSQL 연결 URL (Prisma) |
+| `ADMIN_PASSWORD` | 관리자 로그인 비밀번호 |
+| `PORT` | (선택) 기본값 `4000` |
+
+프론트 개발 서버는 `vite.config.ts`에서 `/api`를 백엔드로 프록시합니다.
+
+배포(Render 등)는 저장소 루트의 [`render.yaml`](./render.yaml)을 참고합니다.
 
 ## 실행 방법
 
