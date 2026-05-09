@@ -20,7 +20,7 @@ const exerciseInput = z.object({
 const routineInput = z.object({
   name: z.string().min(1),
   description: z.string().optional().nullable(),
-  weekday: z.number().int().min(-1).max(6),
+  weekdays: z.array(z.number().int().min(0).max(6)).default([]),
   instructions: z.string().optional().nullable(),
   cautions: z.string().optional().nullable(),
   exercises: z.array(exerciseInput).optional(),
@@ -35,14 +35,14 @@ routinesRouter.get(
       const routines = await prisma.routine.findMany({
         where: { assignments: { some: { memberId: req.auth.memberId } } },
         include: { exercises: { orderBy: { orderIndex: 'asc' } } },
-        orderBy: { weekday: 'asc' },
+        orderBy: { id: 'asc' },
       });
       res.json(routines);
       return;
     }
     const routines = await prisma.routine.findMany({
       include: { exercises: { orderBy: { orderIndex: 'asc' } } },
-      orderBy: { weekday: 'asc' },
+      orderBy: { id: 'asc' },
     });
     res.json(routines);
   }),

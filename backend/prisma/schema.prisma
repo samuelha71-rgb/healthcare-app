@@ -35,7 +35,7 @@ model Routine {
   id          Int      @id @default(autoincrement())
   name        String              // "초보자 상체", "전신 분할" 등
   description String?
-  weekday     Int                 // 0=일 ... 6=토, -1=요일 무관
+  weekdays    Int[]               // [0,1,3] = 일/월/수, 빈 배열 = 요일 무관
   instructions String?            // 방법 설명
   cautions    String?             // 주의사항
   createdAt   DateTime @default(now())

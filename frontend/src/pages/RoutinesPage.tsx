@@ -68,11 +68,20 @@ export function RoutinesPage() {
             <Card key={r.id}>
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="font-semibold text-lg">{r.name}</h2>
-                    <Badge color="blue">
-                      {r.weekday >= 0 ? WEEKDAY_LABELS[r.weekday] + '요일' : '요일 무관'}
-                    </Badge>
+                    {r.weekdays.length === 0 ? (
+                      <Badge color="gray">요일 무관</Badge>
+                    ) : (
+                      r.weekdays
+                        .slice()
+                        .sort((a, b) => a - b)
+                        .map((w) => (
+                          <Badge key={w} color="blue">
+                            {WEEKDAY_LABELS[w]}
+                          </Badge>
+                        ))
+                    )}
                   </div>
                   {r.description && <p className="text-sm text-gray-600 mt-1">{r.description}</p>}
                 </div>
@@ -187,7 +196,7 @@ function RoutineFormModal({
   routine?: Routine;
 }) {
   const [name, setName] = useState(routine?.name ?? '');
-  const [weekday, setWeekday] = useState(routine?.weekday ?? -1);
+  const [weekdays, setWeekdays] = useState<number[]>(routine?.weekdays ?? []);
   const [description, setDescription] = useState(routine?.description ?? '');
   const [instructions, setInstructions] = useState(routine?.instructions ?? '');
   const [cautions, setCautions] = useState(routine?.cautions ?? '');
@@ -207,7 +216,7 @@ function RoutineFormModal({
     mutationFn: () => {
       const data: RoutineInput = {
         name,
-        weekday,
+        weekdays,
         description: description || null,
         instructions: instructions || null,
         cautions: cautions || null,
@@ -247,15 +256,34 @@ function RoutineFormModal({
           <Input value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div>
-          <Label>요일</Label>
-          <Select value={weekday} onChange={(e) => setWeekday(Number(e.target.value))}>
-            <option value={-1}>요일 무관</option>
-            {WEEKDAY_LABELS.map((w, i) => (
-              <option key={i} value={i}>
-                {w}요일
-              </option>
-            ))}
-          </Select>
+          <Label>요일 (복수 선택 가능)</Label>
+          <div className="flex flex-wrap gap-2">
+            {WEEKDAY_LABELS.map((w, i) => {
+              const checked = weekdays.includes(i);
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() =>
+                    setWeekdays((curr) =>
+                      checked ? curr.filter((d) => d !== i) : [...curr, i],
+                    )
+                  }
+                  className={
+                    'px-3 py-1.5 rounded-lg text-sm font-medium border transition ' +
+                    (checked
+                      ? 'bg-indigo-600 border-indigo-600 text-white'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50')
+                  }
+                >
+                  {w}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            아무것도 선택 안 하면 "요일 무관"으로 저장됩니다.
+          </p>
         </div>
         <div>
           <Label>설명</Label>

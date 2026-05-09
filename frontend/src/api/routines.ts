@@ -4,7 +4,7 @@ import type { Routine } from '@/types';
 export interface RoutineInput {
   name: string;
   description?: string | null;
-  weekday: number;
+  weekdays: number[];
   instructions?: string | null;
   cautions?: string | null;
   exercises?: Array<{

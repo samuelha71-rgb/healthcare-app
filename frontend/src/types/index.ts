@@ -40,7 +40,7 @@ export interface Routine {
   id: number;
   name: string;
   description?: string | null;
-  weekday: number; // 0=일 ... 6=토, -1=무관
+  weekdays: number[]; // [0,1,3] = 일/월/수, [] = 무관
   instructions?: string | null;
   cautions?: string | null;
   exercises: RoutineExercise[];
