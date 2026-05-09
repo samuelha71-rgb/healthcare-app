@@ -4,6 +4,7 @@ import { membersApi } from '@/api/members';
 import { workoutLogsApi } from '@/api/workout-logs';
 import { Card, EmptyState } from '@/components/ui';
 import { fmtDate } from '@/utils/format';
+import { MemberComparison } from '@/features/MemberComparison';
 
 export function DashboardPage() {
   const { data: members = [] } = useQuery({
@@ -39,6 +40,8 @@ export function DashboardPage() {
           <p className="text-3xl font-bold mt-1">{recentLogs.length}</p>
         </Card>
       </div>
+
+      <MemberComparison />
 
       <Card>
         <h2 className="font-semibold mb-3">최근 기록</h2>
