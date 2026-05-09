@@ -10,12 +10,16 @@ import { InbodyChart } from '@/features/InbodyChart';
 import { InbodyForm } from '@/features/InbodyForm';
 import { PhotosSection } from '@/features/PhotosSection';
 import { GoalsSection } from '@/features/GoalsSection';
+import { MemberComparison } from '@/features/MemberComparison';
 import { fmtDate } from '@/utils/format';
+import { useAuth } from '@/auth/AuthContext';
 
 export function MemberDetailPage() {
   const params = useParams();
   const id = Number(params.id);
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const isStudent = user?.role === 'student';
 
   const { data: member } = useQuery({
     queryKey: ['members', id],
@@ -165,6 +169,8 @@ export function MemberDetailPage() {
 
       <GoalsSection memberId={id} />
       <PhotosSection memberId={id} />
+
+      {isStudent && <MemberComparison />}
 
       {member.routineAssignments.length > 0 && (
         <Card>

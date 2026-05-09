@@ -15,6 +15,7 @@ import { inbodyRouter } from './routes/inbody';
 import { photosRouter } from './routes/photos';
 import { goalsRouter } from './routes/goals';
 import { exportRouter } from './routes/export';
+import { statsRouter } from './routes/stats';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
@@ -36,6 +37,7 @@ app.use('/api/inbody', inbodyRouter);
 app.use('/api/photos', photosRouter);
 app.use('/api/goals', goalsRouter);
 app.use('/api/export', exportRouter);
+app.use('/api/stats', statsRouter);
 
 app.use(errorHandler);
 

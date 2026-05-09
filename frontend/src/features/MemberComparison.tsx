@@ -1,11 +1,10 @@
-// 대상 간 운동 성실도 비교 — 관리자 전용
+// 대상 간 운동 성실도 비교 — 학생/관리자 모두 볼 수 있음 (요약 지표만)
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { membersApi } from '@/api/members';
-import { workoutLogsApi } from '@/api/workout-logs';
+import { statsApi } from '@/api/stats';
 import { Card, EmptyState, Select } from '@/components/ui';
-import { currentStreak, recentDays } from '@/utils/stats';
+import { useAuth } from '@/auth/AuthContext';
 
 type SortKey = 'recent7' | 'recent30' | 'streak' | 'total' | 'avgRpe';
 
@@ -18,36 +17,13 @@ const SORT_LABELS: Record<SortKey, string> = {
 };
 
 export function MemberComparison() {
-  const { data: members = [] } = useQuery({
-    queryKey: ['members'],
-    queryFn: membersApi.list,
-  });
-  const { data: logs = [] } = useQuery({
-    queryKey: ['workout-logs'],
-    queryFn: () => workoutLogsApi.list(),
+  const { user } = useAuth();
+  const { data: rows = [] } = useQuery({
+    queryKey: ['stats', 'comparison'],
+    queryFn: statsApi.comparison,
   });
 
   const [sortKey, setSortKey] = useState<SortKey>('recent30');
-
-  const rows = useMemo(() => {
-    return members.map((m) => {
-      const myLogs = logs.filter((l) => l.memberId === m.id);
-      const dates = myLogs.map((l) => l.date);
-      const rpeVals = myLogs.map((l) => l.rpe).filter((v): v is number => !!v);
-      const avgRpe = rpeVals.length
-        ? rpeVals.reduce((s, v) => s + v, 0) / rpeVals.length
-        : 0;
-
-      return {
-        member: m,
-        recent7: recentDays(dates, 7),
-        recent30: recentDays(dates, 30),
-        streak: currentStreak(dates),
-        total: new Set(dates.map((d) => d.slice(0, 10))).size,
-        avgRpe: Math.round(avgRpe * 10) / 10,
-      };
-    });
-  }, [members, logs]);
 
   const sorted = useMemo(() => {
     return [...rows].sort((a, b) => (b[sortKey] as number) - (a[sortKey] as number));
@@ -55,10 +31,10 @@ export function MemberComparison() {
 
   const max = Math.max(1, ...sorted.map((r) => r[sortKey] as number));
 
-  if (members.length === 0) {
+  if (rows.length === 0) {
     return (
       <Card>
-        <EmptyState title="비교할 대상이 없습니다" description="대상을 먼저 추가해주세요." />
+        <EmptyState title="비교할 대상이 없습니다" />
       </Card>
     );
   }
@@ -66,7 +42,7 @@ export function MemberComparison() {
   return (
     <Card>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold">대상 성실도 비교</h2>
+        <h2 className="font-semibold">성실도 비교</h2>
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500">기준:</span>
           <Select
@@ -101,8 +77,12 @@ export function MemberComparison() {
             {sorted.map((r, i) => {
               const value = r[sortKey] as number;
               const pct = (value / max) * 100;
+              const isMe = user?.role === 'student' && user.memberId === r.memberId;
               return (
-                <tr key={r.member.id} className="border-b last:border-0">
+                <tr
+                  key={r.memberId}
+                  className={`border-b last:border-0 ${isMe ? 'bg-indigo-50' : ''}`}
+                >
                   <td className="py-2 pr-2 font-bold">
                     {i === 0 && '🥇'}
                     {i === 1 && '🥈'}
@@ -110,12 +90,19 @@ export function MemberComparison() {
                     {i > 2 && i + 1}
                   </td>
                   <td className="pr-2">
-                    <Link
-                      to={`/members/${r.member.id}`}
-                      className="text-indigo-600 hover:underline font-medium"
-                    >
-                      {r.member.name}
-                    </Link>
+                    {user?.role === 'admin' ? (
+                      <Link
+                        to={`/members/${r.memberId}`}
+                        className="text-indigo-600 hover:underline font-medium"
+                      >
+                        {r.name}
+                      </Link>
+                    ) : (
+                      <span className={`font-medium ${isMe ? 'text-indigo-700' : ''}`}>
+                        {r.name}
+                        {isMe && <span className="ml-1 text-xs">(나)</span>}
+                      </span>
+                    )}
                   </td>
                   <td className="pr-2">{r.recent7}일</td>
                   <td className="pr-2">{r.recent30}일</td>
