@@ -76,6 +76,8 @@ export function MemberDetailPage() {
         </p>
       </div>
 
+      {isStudent && <MemberComparison />}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <p className="text-sm text-gray-500">전체 운동 일수</p>
@@ -169,8 +171,6 @@ export function MemberDetailPage() {
 
       <GoalsSection memberId={id} />
       <PhotosSection memberId={id} />
-
-      {isStudent && <MemberComparison />}
 
       {member.routineAssignments.length > 0 && (
         <Card>
