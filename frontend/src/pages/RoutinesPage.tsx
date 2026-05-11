@@ -57,105 +57,20 @@ export function RoutinesPage() {
           />
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {routines.map((r) => (
-            <Card key={r.id}>
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="font-semibold text-lg">{r.name}</h2>
-                    {r.weekdays.length === 0 ? (
-                      <Badge color="gray">요일 무관</Badge>
-                    ) : (
-                      r.weekdays
-                        .slice()
-                        .sort((a, b) => a - b)
-                        .map((w) => (
-                          <Badge key={w} color="blue">
-                            {WEEKDAY_LABELS[w]}
-                          </Badge>
-                        ))
-                    )}
-                  </div>
-                  {r.description && <p className="text-sm text-gray-600 mt-1">{r.description}</p>}
-                </div>
-                {isAdmin && (
-                  <div className="flex gap-2">
-                    <Button variant="secondary" onClick={() => setEditing(r)}>
-                      수정
-                    </Button>
-                    <Button
-                      variant="danger"
-                      onClick={() => {
-                        if (confirm('루틴을 삭제할까요?')) remove.mutate(r.id);
-                      }}
-                    >
-                      삭제
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {r.instructions && (
-                <div className="mt-3 text-sm">
-                  <p className="font-medium text-gray-700">방법</p>
-                  <p className="text-gray-600 whitespace-pre-line">{r.instructions}</p>
-                </div>
-              )}
-              {r.cautions && (
-                <div className="mt-2 text-sm">
-                  <p className="font-medium text-red-700">주의사항</p>
-                  <p className="text-red-600 whitespace-pre-line">{r.cautions}</p>
-                </div>
-              )}
-
-              {r.exercises.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-sm font-medium text-gray-700 mb-2">운동 목록</p>
-                  <ul className="space-y-1.5">
-                    {r.exercises.map((ex) => (
-                      <li key={ex.id} className="text-sm border-l-2 border-indigo-200 pl-3">
-                        <div className="font-medium">
-                          {ex.exerciseName}
-                          {ex.targetSets && (
-                            <span className="text-gray-500 font-normal ml-2">
-                              {ex.targetSets}세트 × {ex.targetReps ?? '-'}회
-                              {ex.targetWeight ? ` @ ${ex.targetWeight}kg` : ''}
-                            </span>
-                          )}
-                        </div>
-                        {ex.instructions && (
-                          <p className="text-gray-600 text-xs mt-0.5">{ex.instructions}</p>
-                        )}
-                        {ex.cautions && (
-                          <p className="text-red-600 text-xs mt-0.5">⚠ {ex.cautions}</p>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {r.assignments && r.assignments.length > 0 && (
-                <div className="mt-4 flex items-center gap-2 flex-wrap text-sm">
-                  <span className="text-gray-500">배정:</span>
-                  {r.assignments.map((a) => (
-                    <Badge key={a.memberId} color="green">
-                      {a.member.name}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              {isAdmin && r.assignments && r.assignments.length === 0 && (
-                <p className="mt-4 text-xs text-gray-400">
-                  배정된 학생 없음 — 수정 버튼에서 학생을 선택하세요
-                </p>
-              )}
-            </Card>
+            <RoutineCard
+              key={r.id}
+              routine={r}
+              isAdmin={isAdmin}
+              onEdit={() => setEditing(r)}
+              onDelete={() => {
+                if (confirm('루틴을 삭제할까요?')) remove.mutate(r.id);
+              }}
+            />
           ))}
         </div>
       )}
-
       {showAdd && (
         <RoutineFormModal
           open
@@ -434,5 +349,118 @@ function RoutineFormModal({
         </div>
       </div>
     </Modal>
+  );
+}
+
+// 한 루틴을 컴팩트한 카드로 — 클릭하면 펼쳐서 운동/방법/주의 보기
+function RoutineCard({
+  routine: r,
+  isAdmin,
+  onEdit,
+  onDelete,
+}: {
+  routine: Routine;
+  isAdmin: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Card className="!p-3 flex flex-col gap-2">
+      {/* 헤더: 이름 + 요일 뱃지 */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold truncate">{r.name}</div>
+          <div className="flex items-center gap-1 flex-wrap mt-1">
+            {r.weekdays.length === 0 ? (
+              <Badge color="gray">요일 무관</Badge>
+            ) : (
+              r.weekdays
+                .slice()
+                .sort((a, b) => a - b)
+                .map((w) => (
+                  <Badge key={w} color="blue">
+                    {WEEKDAY_LABELS[w]}
+                  </Badge>
+                ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 요약: 운동 개수 + 배정 학생 */}
+      <div className="text-xs text-gray-500 flex flex-wrap gap-x-3 gap-y-1">
+        {r.exercises.length > 0 && <span>운동 {r.exercises.length}개</span>}
+        {r.assignments && r.assignments.length > 0 && (
+          <span>배정 {r.assignments.length}명</span>
+        )}
+      </div>
+
+      {/* 배정된 학생 뱃지 */}
+      {r.assignments && r.assignments.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {r.assignments.map((a) => (
+            <Badge key={a.memberId} color="green">
+              {a.member.name}
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {/* 펼치기 */}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="text-xs text-indigo-600 hover:underline self-start"
+      >
+        {open ? '▲ 접기' : '▼ 자세히 보기'}
+      </button>
+
+      {open && (
+        <div className="text-sm space-y-2 mt-1 border-t pt-2">
+          {r.description && <p className="text-gray-600">{r.description}</p>}
+          {r.instructions && (
+            <div>
+              <p className="font-medium text-gray-700 text-xs">방법</p>
+              <p className="text-gray-600 text-xs whitespace-pre-line">{r.instructions}</p>
+            </div>
+          )}
+          {r.cautions && (
+            <div>
+              <p className="font-medium text-red-700 text-xs">주의사항</p>
+              <p className="text-red-600 text-xs whitespace-pre-line">{r.cautions}</p>
+            </div>
+          )}
+          {r.exercises.length > 0 && (
+            <ul className="space-y-1">
+              {r.exercises.map((ex) => (
+                <li key={ex.id} className="text-xs border-l-2 border-indigo-200 pl-2">
+                  <span className="font-medium">{ex.exerciseName}</span>
+                  {ex.targetSets && (
+                    <span className="text-gray-500 ml-1">
+                      {ex.targetSets}×{ex.targetReps ?? '-'}
+                      {ex.targetWeight ? ` @${ex.targetWeight}kg` : ''}
+                    </span>
+                  )}
+                  {ex.cautions && <span className="text-red-500 ml-1">⚠</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* 관리자 액션 */}
+      {isAdmin && (
+        <div className="flex gap-2 mt-auto pt-2 border-t">
+          <Button variant="secondary" onClick={onEdit} className="flex-1 !py-1 !text-xs">
+            수정
+          </Button>
+          <Button variant="danger" onClick={onDelete} className="flex-1 !py-1 !text-xs">
+            삭제
+          </Button>
+        </div>
+      )}
+    </Card>
   );
 }
