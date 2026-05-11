@@ -91,17 +91,22 @@ export function MembersPage() {
         </div>
       )}
 
-      <MemberFormModal
-        open={showAdd}
-        onClose={() => setShowAdd(false)}
-        onDone={() => qc.invalidateQueries({ queryKey: ['members'] })}
-      />
-      <MemberFormModal
-        open={!!editing}
-        member={editing ?? undefined}
-        onClose={() => setEditing(null)}
-        onDone={() => qc.invalidateQueries({ queryKey: ['members'] })}
-      />
+      {showAdd && (
+        <MemberFormModal
+          open
+          onClose={() => setShowAdd(false)}
+          onDone={() => qc.invalidateQueries({ queryKey: ['members'] })}
+        />
+      )}
+      {editing && (
+        <MemberFormModal
+          key={editing.id}
+          open
+          member={editing}
+          onClose={() => setEditing(null)}
+          onDone={() => qc.invalidateQueries({ queryKey: ['members'] })}
+        />
+      )}
     </div>
   );
 }

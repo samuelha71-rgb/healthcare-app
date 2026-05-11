@@ -156,19 +156,25 @@ export function RoutinesPage() {
         </div>
       )}
 
-      <RoutineFormModal
-        open={showAdd}
-        members={members}
-        onClose={() => setShowAdd(false)}
-        onDone={() => qc.invalidateQueries({ queryKey: ['routines'] })}
-      />
-      <RoutineFormModal
-        open={!!editing}
-        routine={editing ?? undefined}
-        members={members}
-        onClose={() => setEditing(null)}
-        onDone={() => qc.invalidateQueries({ queryKey: ['routines'] })}
-      />
+      {showAdd && (
+        <RoutineFormModal
+          open
+          members={members}
+          onClose={() => setShowAdd(false)}
+          onDone={() => qc.invalidateQueries({ queryKey: ['routines'] })}
+        />
+      )}
+      {editing && (
+        // key를 두어 다른 루틴을 편집할 때마다 폼이 새 prop으로 다시 초기화되게 함
+        <RoutineFormModal
+          key={editing.id}
+          open
+          routine={editing}
+          members={members}
+          onClose={() => setEditing(null)}
+          onDone={() => qc.invalidateQueries({ queryKey: ['routines'] })}
+        />
+      )}
     </div>
   );
 }
