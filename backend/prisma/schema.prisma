@@ -45,19 +45,34 @@ model Routine {
   assignments RoutineAssignment[]
 }
 
+// 운동 라이브러리 — 부위별 모음, 관리자가 등록
+model Exercise {
+  id           Int      @id @default(autoincrement())
+  name         String
+  bodyPart     String?  // "가슴", "등", "어깨", "팔", "다리", "둔근", "복부", "유산소", "전신"
+  instructions String?  // 방법/자세
+  cautions     String?  // 주의사항
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  routineUses  RoutineExercise[]
+}
+
 // 루틴에 포함된 운동들
 model RoutineExercise {
-  id            Int     @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   routineId     Int
-  exerciseName  String              // "벤치프레스"
+  exerciseId    Int?                  // 라이브러리 참조
+  exerciseName  String                // 표시용 (라이브러리 선택 시 자동 채움)
   targetSets    Int?
   targetReps    Int?
   targetWeight  Float?
-  instructions  String?             // 자세/방법
-  cautions      String?             // 주의점
+  instructions  String?               // (deprecated) 라이브러리에서 가져옴
+  cautions      String?               // (deprecated)
   orderIndex    Int     @default(0)
 
-  routine       Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  routine       Routine   @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  exercise      Exercise? @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
 }
 
 // 대상 ↔ 루틴 배정

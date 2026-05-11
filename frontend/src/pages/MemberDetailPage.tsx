@@ -252,32 +252,32 @@ function RoutineDetail({ routine }: { routine: import('@/types').Routine }) {
       {routine.description && (
         <p className="text-gray-600 text-xs mt-0.5">{routine.description}</p>
       )}
-      {routine.instructions && (
-        <p className="text-gray-700 text-xs mt-1 whitespace-pre-line">
-          <span className="font-medium">방법: </span>
-          {routine.instructions}
-        </p>
-      )}
-      {routine.cautions && (
-        <p className="text-red-600 text-xs mt-1 whitespace-pre-line">
-          <span className="font-medium">⚠ 주의: </span>
-          {routine.cautions}
-        </p>
-      )}
       {routine.exercises.length > 0 && (
-        <ul className="mt-2 space-y-1">
-          {routine.exercises.map((ex) => (
-            <li key={ex.id} className="text-xs text-gray-700">
-              • <span className="font-medium">{ex.exerciseName}</span>
-              {ex.targetSets && (
-                <span className="text-gray-500 ml-1">
-                  {ex.targetSets}세트 × {ex.targetReps ?? '-'}회
-                  {ex.targetWeight ? ` @ ${ex.targetWeight}kg` : ''}
-                </span>
-              )}
-              {ex.cautions && <span className="text-red-500 ml-1">⚠ {ex.cautions}</span>}
-            </li>
-          ))}
+        <ul className="mt-2 space-y-1.5">
+          {routine.exercises.map((ex) => {
+            const inst = ex.exercise?.instructions ?? ex.instructions;
+            const caut = ex.exercise?.cautions ?? ex.cautions;
+            return (
+              <li key={ex.id} className="text-xs text-gray-700">
+                <div>
+                  • <span className="font-medium">{ex.exerciseName}</span>
+                  {ex.exercise?.bodyPart && (
+                    <span className="text-gray-400 ml-1">[{ex.exercise.bodyPart}]</span>
+                  )}
+                  {ex.targetSets && (
+                    <span className="text-gray-500 ml-1">
+                      {ex.targetSets}세트 × {ex.targetReps ?? '-'}회
+                      {ex.targetWeight ? ` @ ${ex.targetWeight}kg` : ''}
+                    </span>
+                  )}
+                </div>
+                {inst && <p className="ml-3 text-gray-600 whitespace-pre-line">{inst}</p>}
+                {caut && (
+                  <p className="ml-3 text-red-500 whitespace-pre-line">⚠ {caut}</p>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

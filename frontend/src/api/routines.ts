@@ -8,6 +8,7 @@ export interface RoutineInput {
   instructions?: string | null;
   cautions?: string | null;
   exercises?: Array<{
+    exerciseId?: number | null;
     exerciseName: string;
     targetSets?: number | null;
     targetReps?: number | null;

@@ -8,6 +8,7 @@ import { MembersPage } from './pages/MembersPage';
 import { MemberDetailPage } from './pages/MemberDetailPage';
 import { PinsPage } from './pages/PinsPage';
 import { RoutinesPage } from './pages/RoutinesPage';
+import { ExercisesPage } from './pages/ExercisesPage';
 import { DailyLogPage } from './pages/DailyLogPage';
 import { ReportsPage } from './pages/ReportsPage';
 
@@ -42,6 +43,7 @@ function App() {
           />
           <Route path="/members/:id" element={<MemberDetailPage />} />
           <Route path="/routines" element={<RoutinesPage />} />
+          <Route path="/exercises" element={<ExercisesPage />} />
           <Route path="/log" element={<DailyLogPage />} />
           <Route
             path="/reports"

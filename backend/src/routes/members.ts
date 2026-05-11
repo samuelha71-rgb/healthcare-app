@@ -42,7 +42,12 @@ membersRouter.get(
         routineAssignments: {
           include: {
             routine: {
-              include: { exercises: { orderBy: { orderIndex: 'asc' } } },
+              include: {
+                exercises: {
+                  orderBy: { orderIndex: 'asc' },
+                  include: { exercise: true },
+                },
+              },
             },
           },
         },

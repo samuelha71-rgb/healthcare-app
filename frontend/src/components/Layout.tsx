@@ -8,6 +8,7 @@ const ADMIN_NAV = [
   { to: '/members', label: '대상' },
   { to: '/pins', label: 'PIN 관리' },
   { to: '/routines', label: '루틴' },
+  { to: '/exercises', label: '운동 라이브러리' },
   { to: '/log', label: '오늘 기록' },
   { to: '/reports', label: '리포트' },
 ];
@@ -16,6 +17,7 @@ const STUDENT_NAV = [
   { to: '/', label: '내 정보', end: true },
   { to: '/log', label: '오늘 기록' },
   { to: '/routines', label: '내 루틴' },
+  { to: '/exercises', label: '운동 라이브러리' },
 ];
 
 export function Layout() {

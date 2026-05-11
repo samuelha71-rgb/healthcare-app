@@ -30,9 +30,31 @@ export interface MemberDetail extends Member {
   };
 }
 
+export interface Exercise {
+  id: number;
+  name: string;
+  bodyPart?: string | null;
+  instructions?: string | null;
+  cautions?: string | null;
+}
+
+export const BODY_PARTS = [
+  '가슴',
+  '등',
+  '어깨',
+  '팔',
+  '다리',
+  '둔근',
+  '복부',
+  '유산소',
+  '전신',
+] as const;
+export type BodyPart = (typeof BODY_PARTS)[number];
+
 export interface RoutineExercise {
   id: number;
   routineId: number;
+  exerciseId?: number | null;
   exerciseName: string;
   targetSets?: number | null;
   targetReps?: number | null;
@@ -40,6 +62,7 @@ export interface RoutineExercise {
   instructions?: string | null;
   cautions?: string | null;
   orderIndex: number;
+  exercise?: Exercise | null;
 }
 
 export interface Routine {

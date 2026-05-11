@@ -8,6 +8,7 @@ import { requireAdmin, requireAuth } from '../middleware/auth';
 export const routinesRouter = Router();
 
 const exerciseInput = z.object({
+  exerciseId: z.number().int().optional().nullable(),
   exerciseName: z.string().min(1),
   targetSets: z.number().int().positive().optional().nullable(),
   targetReps: z.number().int().positive().optional().nullable(),
@@ -34,7 +35,7 @@ routinesRouter.get(
     if (req.auth?.role === 'student') {
       const routines = await prisma.routine.findMany({
         where: { assignments: { some: { memberId: req.auth.memberId } } },
-        include: { exercises: { orderBy: { orderIndex: 'asc' } } },
+        include: { exercises: { orderBy: { orderIndex: 'asc' }, include: { exercise: true } } },
         orderBy: { id: 'asc' },
       });
       res.json(routines);
@@ -42,7 +43,7 @@ routinesRouter.get(
     }
     const routines = await prisma.routine.findMany({
       include: {
-        exercises: { orderBy: { orderIndex: 'asc' } },
+        exercises: { orderBy: { orderIndex: 'asc' }, include: { exercise: true } },
         assignments: { include: { member: { select: { id: true, name: true } } } },
       },
       orderBy: { id: 'asc' },
@@ -59,7 +60,7 @@ routinesRouter.get(
     const routine = await prisma.routine.findUnique({
       where: { id },
       include: {
-        exercises: { orderBy: { orderIndex: 'asc' } },
+        exercises: { orderBy: { orderIndex: 'asc' }, include: { exercise: true } },
         assignments: { include: { member: true } },
       },
     });
@@ -109,7 +110,7 @@ routinesRouter.patch(
       }
       return tx.routine.findUnique({
         where: { id: r.id },
-        include: { exercises: { orderBy: { orderIndex: 'asc' } } },
+        include: { exercises: { orderBy: { orderIndex: 'asc' }, include: { exercise: true } } },
       });
     });
 

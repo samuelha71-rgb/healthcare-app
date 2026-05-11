@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { routinesApi, type RoutineInput } from '@/api/routines';
 import { membersApi } from '@/api/members';
+import { exercisesApi } from '@/api/exercises';
 import {
   Badge,
   Button,
@@ -10,7 +11,7 @@ import {
   Input,
   Label,
   Modal,
-  Textarea,
+  Select,
 } from '@/components/ui';
 import type { Routine } from '@/types';
 import { WEEKDAY_LABELS } from '@/types';
@@ -107,22 +108,24 @@ function RoutineFormModal({
   routine?: Routine;
   members: { id: number; name: string }[];
 }) {
+  const { data: library = [] } = useQuery({
+    queryKey: ['exercises'],
+    queryFn: () => exercisesApi.list(),
+  });
+
   const [name, setName] = useState(routine?.name ?? '');
   const [weekdays, setWeekdays] = useState<number[]>(routine?.weekdays ?? []);
   const [description, setDescription] = useState(routine?.description ?? '');
-  const [instructions, setInstructions] = useState(routine?.instructions ?? '');
-  const [cautions, setCautions] = useState(routine?.cautions ?? '');
   const [memberIds, setMemberIds] = useState<number[]>(
     routine?.assignments?.map((a) => a.memberId) ?? [],
   );
   const [exercises, setExercises] = useState<RoutineInput['exercises']>(
     routine?.exercises.map((e) => ({
+      exerciseId: e.exerciseId ?? null,
       exerciseName: e.exerciseName,
       targetSets: e.targetSets,
       targetReps: e.targetReps,
       targetWeight: e.targetWeight,
-      instructions: e.instructions,
-      cautions: e.cautions,
       orderIndex: e.orderIndex,
     })) ?? [],
   );
@@ -133,8 +136,6 @@ function RoutineFormModal({
         name,
         weekdays,
         description: description || null,
-        instructions: instructions || null,
-        cautions: cautions || null,
         exercises,
       };
       const saved = routine
@@ -214,24 +215,8 @@ function RoutineFormModal({
           </p>
         </div>
         <div>
-          <Label>설명</Label>
+          <Label>설명 (선택)</Label>
           <Input value={description ?? ''} onChange={(e) => setDescription(e.target.value)} />
-        </div>
-        <div>
-          <Label>방법</Label>
-          <Textarea
-            rows={2}
-            value={instructions ?? ''}
-            onChange={(e) => setInstructions(e.target.value)}
-          />
-        </div>
-        <div>
-          <Label>주의사항</Label>
-          <Textarea
-            rows={2}
-            value={cautions ?? ''}
-            onChange={(e) => setCautions(e.target.value)}
-          />
         </div>
 
         <div>
@@ -273,79 +258,99 @@ function RoutineFormModal({
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <Label>운동 목록</Label>
+            <Label>운동 목록 (라이브러리에서 선택)</Label>
             <Button
               variant="ghost"
               onClick={() =>
                 setExercises([
                   ...(exercises ?? []),
-                  { exerciseName: '', orderIndex: (exercises?.length ?? 0) },
+                  {
+                    exerciseId: null,
+                    exerciseName: '',
+                    orderIndex: exercises?.length ?? 0,
+                  },
                 ])
               }
+              disabled={library.length === 0}
             >
               + 추가
             </Button>
           </div>
-          <div className="space-y-2">
-            {(exercises ?? []).map((ex, i) => (
-              <div key={i} className="border rounded-lg p-3 space-y-2">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="운동 이름"
-                    value={ex.exerciseName}
-                    onChange={(e) => updateEx(i, { exerciseName: e.target.value })}
-                  />
-                  <Button
-                    variant="ghost"
-                    onClick={() =>
-                      setExercises((exercises ?? []).filter((_, idx) => idx !== i))
-                    }
-                  >
-                    ×
-                  </Button>
+          {library.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              먼저 "운동 라이브러리" 메뉴에서 운동을 등록하세요. 방법/주의사항은 거기서
+              관리되어 자동으로 표시됩니다.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {(exercises ?? []).map((ex, i) => (
+                <div key={i} className="border rounded-lg p-3 space-y-2">
+                  <div className="flex gap-2">
+                    <Select
+                      value={ex.exerciseId ?? ''}
+                      onChange={(e) => {
+                        const id = e.target.value ? Number(e.target.value) : null;
+                        const lib = library.find((l) => l.id === id);
+                        updateEx(i, {
+                          exerciseId: id,
+                          exerciseName: lib?.name ?? ex.exerciseName,
+                        });
+                      }}
+                    >
+                      <option value="">운동 선택</option>
+                      {library.map((l) => (
+                        <option key={l.id} value={l.id}>
+                          {l.bodyPart ? `[${l.bodyPart}] ` : ''}
+                          {l.name}
+                        </option>
+                      ))}
+                    </Select>
+                    <Button
+                      variant="ghost"
+                      onClick={() =>
+                        setExercises((exercises ?? []).filter((_, idx) => idx !== i))
+                      }
+                    >
+                      ×
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Input
+                      type="number"
+                      placeholder="세트"
+                      value={ex.targetSets ?? ''}
+                      onChange={(e) =>
+                        updateEx(i, {
+                          targetSets: e.target.value ? Number(e.target.value) : null,
+                        })
+                      }
+                    />
+                    <Input
+                      type="number"
+                      placeholder="횟수"
+                      value={ex.targetReps ?? ''}
+                      onChange={(e) =>
+                        updateEx(i, {
+                          targetReps: e.target.value ? Number(e.target.value) : null,
+                        })
+                      }
+                    />
+                    <Input
+                      type="number"
+                      step="0.5"
+                      placeholder="무게(kg)"
+                      value={ex.targetWeight ?? ''}
+                      onChange={(e) =>
+                        updateEx(i, {
+                          targetWeight: e.target.value ? Number(e.target.value) : null,
+                        })
+                      }
+                    />
+                  </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <Input
-                    type="number"
-                    placeholder="세트"
-                    value={ex.targetSets ?? ''}
-                    onChange={(e) =>
-                      updateEx(i, { targetSets: e.target.value ? Number(e.target.value) : null })
-                    }
-                  />
-                  <Input
-                    type="number"
-                    placeholder="횟수"
-                    value={ex.targetReps ?? ''}
-                    onChange={(e) =>
-                      updateEx(i, { targetReps: e.target.value ? Number(e.target.value) : null })
-                    }
-                  />
-                  <Input
-                    type="number"
-                    step="0.5"
-                    placeholder="무게(kg)"
-                    value={ex.targetWeight ?? ''}
-                    onChange={(e) =>
-                      updateEx(i, {
-                        targetWeight: e.target.value ? Number(e.target.value) : null,
-                      })
-                    }
-                  />
-                </div>
-                <Input
-                  placeholder="방법 (자세, 호흡 등)"
-                  value={ex.instructions ?? ''}
-                  onChange={(e) => updateEx(i, { instructions: e.target.value })}
-                />
-                <Input
-                  placeholder="주의사항"
-                  value={ex.cautions ?? ''}
-                  onChange={(e) => updateEx(i, { cautions: e.target.value })}
-                />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </Modal>
@@ -398,37 +403,32 @@ function RoutineCard({
 
       {/* 상세 내용 */}
       {r.description && <p className="text-sm text-gray-600">{r.description}</p>}
-      {r.instructions && (
-        <div className="text-xs">
-          <p className="font-medium text-gray-700">방법</p>
-          <p className="text-gray-600 whitespace-pre-line">{r.instructions}</p>
-        </div>
-      )}
-      {r.cautions && (
-        <div className="text-xs">
-          <p className="font-medium text-red-700">주의사항</p>
-          <p className="text-red-600 whitespace-pre-line">{r.cautions}</p>
-        </div>
-      )}
       {r.exercises.length > 0 && (
-        <ul className="space-y-1">
-          {r.exercises.map((ex) => (
-            <li key={ex.id} className="text-xs border-l-2 border-indigo-200 pl-2">
-              <div className="font-medium">
-                {ex.exerciseName}
-                {ex.targetSets && (
-                  <span className="text-gray-500 font-normal ml-1">
-                    {ex.targetSets}×{ex.targetReps ?? '-'}
-                    {ex.targetWeight ? ` @${ex.targetWeight}kg` : ''}
-                  </span>
-                )}
-              </div>
-              {ex.instructions && (
-                <p className="text-gray-600">{ex.instructions}</p>
-              )}
-              {ex.cautions && <p className="text-red-600">⚠ {ex.cautions}</p>}
-            </li>
-          ))}
+        <ul className="space-y-2">
+          {r.exercises.map((ex) => {
+            const inst = ex.exercise?.instructions ?? ex.instructions;
+            const caut = ex.exercise?.cautions ?? ex.cautions;
+            return (
+              <li key={ex.id} className="text-xs border-l-2 border-indigo-200 pl-2">
+                <div className="font-medium">
+                  {ex.exerciseName}
+                  {ex.exercise?.bodyPart && (
+                    <span className="text-gray-400 font-normal ml-1">
+                      [{ex.exercise.bodyPart}]
+                    </span>
+                  )}
+                  {ex.targetSets && (
+                    <span className="text-gray-500 font-normal ml-1">
+                      {ex.targetSets}×{ex.targetReps ?? '-'}
+                      {ex.targetWeight ? ` @${ex.targetWeight}kg` : ''}
+                    </span>
+                  )}
+                </div>
+                {inst && <p className="text-gray-600 whitespace-pre-line">{inst}</p>}
+                {caut && <p className="text-red-600 whitespace-pre-line">⚠ {caut}</p>}
+              </li>
+            );
+          })}
         </ul>
       )}
 
