@@ -1,5 +1,5 @@
 // 페이지 공통 레이아웃 — 역할별로 메뉴 다름
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { useAuth } from '@/auth/AuthContext';
 
@@ -27,9 +27,13 @@ export function Layout() {
   return (
     <div className="min-h-screen flex">
       <aside className="w-56 bg-white border-r border-gray-200 p-4 flex flex-col print:hidden">
-        <Link to="/" className="font-bold text-lg mb-1 hover:opacity-70 transition">
+        <button
+          onClick={logout}
+          title="로그아웃하고 로그인 화면으로"
+          className="font-bold text-lg mb-1 hover:opacity-70 transition text-left"
+        >
           🏋️ Healthcare
-        </Link>
+        </button>
         <div className="text-xs text-gray-500 mb-6">
           {user?.role === 'admin' ? '관리자' : user?.name}
         </div>
