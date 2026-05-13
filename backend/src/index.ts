@@ -18,6 +18,8 @@ import { goalsRouter } from './routes/goals';
 import { exportRouter } from './routes/export';
 import { statsRouter } from './routes/stats';
 import { exercisesRouter } from './routes/exercises';
+import { sleepRouter } from './routes/sleep';
+import { dietRouter } from './routes/diet';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
@@ -64,6 +66,8 @@ app.use('/api/goals', goalsRouter);
 app.use('/api/export', exportRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/exercises', exercisesRouter);
+app.use('/api/sleep', sleepRouter);
+app.use('/api/diet', dietRouter);
 
 app.use(errorHandler);
 

@@ -6,6 +6,7 @@ import { workoutLogsApi } from '@/api/workout-logs';
 import { Button, Card, Label, Select } from '@/components/ui';
 import { InbodyChart } from '@/features/InbodyChart';
 import { AttendanceCalendar } from '@/features/AttendanceCalendar';
+import { SleepDietReport } from '@/features/SleepDietReport';
 import { fmtDate } from '@/utils/format';
 
 export function ReportsPage() {
@@ -163,6 +164,8 @@ export function ReportsPage() {
             <h3 className="font-semibold mb-2">출석</h3>
             <AttendanceCalendar dates={logs.map((l) => l.date)} />
           </Card>
+
+          <SleepDietReport memberId={memberId} />
 
           {member.goals.length > 0 && (
             <Card>

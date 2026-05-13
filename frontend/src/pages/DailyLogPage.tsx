@@ -6,6 +6,7 @@ import { routinesApi } from '@/api/routines';
 import { Button, Card, Input, Label, Select, Textarea } from '@/components/ui';
 import { todayISO } from '@/utils/format';
 import { useAuth } from '@/auth/AuthContext';
+import { SleepDietSection } from '@/features/SleepDietSection';
 
 export function DailyLogPage() {
   const qc = useQueryClient();
@@ -81,8 +82,23 @@ export function DailyLogPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <h1 className="text-2xl font-bold">오늘 운동 기록</h1>
+    <div className="space-y-8 max-w-3xl">
+      {/* 수면 & 식단 — 운동 기록보다 먼저 */}
+      <section className="space-y-3">
+        <h1 className="text-2xl font-bold">오늘 수면 & 식단 기록</h1>
+        <SleepDietSection
+          memberId={memberId}
+          date={date}
+          onDateChange={setDate}
+          isStudent={isStudent}
+          students={members}
+          studentName={user?.name}
+        />
+      </section>
+
+      <section className="space-y-3">
+        <h1 className="text-2xl font-bold">오늘 운동 기록</h1>
+      </section>
 
       <Card>
         <div className="grid grid-cols-2 gap-3">

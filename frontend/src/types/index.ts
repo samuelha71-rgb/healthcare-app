@@ -38,6 +38,48 @@ export interface Exercise {
   cautions?: string | null;
 }
 
+export interface SleepLog {
+  id: number;
+  memberId: number;
+  date: string;
+  hours: number;
+  note?: string | null;
+}
+
+export const DIET_AMOUNTS = ['적게', '적당히', '많이'] as const;
+export type DietAmount = (typeof DIET_AMOUNTS)[number];
+
+export interface DietItem {
+  id?: number;
+  foodName: string;
+  amount: DietAmount;
+  orderIndex?: number;
+}
+
+export interface DietLog {
+  id: number;
+  memberId: number;
+  date: string;
+  note?: string | null;
+  items: DietItem[];
+}
+
+// 음식명 빠른 입력용 추천 목록
+export const COMMON_FOODS = [
+  '밥',
+  '고기',
+  '야채',
+  '과일',
+  '국',
+  '생선',
+  '면',
+  '빵',
+  '두부',
+  '계란',
+  '우유',
+  '간식',
+] as const;
+
 export const BODY_PARTS = [
   '가슴',
   '등',

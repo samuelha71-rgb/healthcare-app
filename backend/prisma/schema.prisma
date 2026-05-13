@@ -27,6 +27,8 @@ model Member {
   inbodyRecords InbodyRecord[]
   photos        Photo[]
   goals         Goal[]
+  sleepLogs     SleepLog[]
+  dietLogs      DietLog[]
   routineAssignments RoutineAssignment[]
 }
 
@@ -148,6 +150,46 @@ model Photo {
   member    Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@index([memberId, date])
+}
+
+// 수면 기록 — 하루 한 번
+model SleepLog {
+  id        Int      @id @default(autoincrement())
+  memberId  Int
+  date      DateTime
+  hours     Float    // 잠 잔 시간(시간 단위, 소수점 가능)
+  note      String?
+  createdAt DateTime @default(now())
+
+  member    Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, date])
+  @@index([memberId, date])
+}
+
+// 식단 기록 — 하루 한 번 + 음식 항목들
+model DietLog {
+  id        Int      @id @default(autoincrement())
+  memberId  Int
+  date      DateTime
+  note      String?
+  createdAt DateTime @default(now())
+
+  items     DietItem[]
+  member    Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, date])
+  @@index([memberId, date])
+}
+
+model DietItem {
+  id         Int    @id @default(autoincrement())
+  dietLogId  Int
+  foodName   String
+  amount     String  // "적게" | "적당히" | "많이"
+  orderIndex Int     @default(0)
+
+  dietLog    DietLog @relation(fields: [dietLogId], references: [id], onDelete: Cascade)
 }
 
 // 목표
