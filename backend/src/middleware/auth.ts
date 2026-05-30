@@ -1,7 +1,8 @@
 // 인증 미들웨어
 //
 // 토큰 형식 (헤더 x-auth-token에 담아 보냄):
-//   "admin:<관리자비번>"  → 관리자
+//   "admin:<서명토큰>"  → 관리자 (로그인 시 발급, 비밀번호는 저장하지 않음)
+//   "admin:<평문비번>"   → (구버전 호환, 재로그인 권장)
 //   "student:<id>:<pin>"  → 학생 (자기 데이터만 접근 가능)
 //
 // req.auth 에 인증 정보가 들어가고, 각 라우트에서 권한을 검사합니다.
@@ -9,6 +10,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { HttpError } from './error';
 import { hashPin, isPinHashed, verifyPin } from '../utils/pin';
+import { verifyAdminToken, verifyLegacyAdminToken } from '../utils/admin-token';
 
 export type Auth =
   | { role: 'admin' }
@@ -29,8 +31,8 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
 
   try {
     if (token.startsWith('admin:')) {
-      const pw = token.slice('admin:'.length);
-      if (pw === process.env.ADMIN_PASSWORD) {
+      const body = token.slice('admin:'.length);
+      if (verifyAdminToken(body) || verifyLegacyAdminToken(body)) {
         req.auth = { role: 'admin' };
       }
     } else if (token.startsWith('student:')) {

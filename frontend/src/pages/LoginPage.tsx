@@ -69,9 +69,10 @@ function StudentLogin({
 }: {
   onSuccess: (id: number, pin: string) => Promise<void>;
 }) {
-  const { data: students = [] } = useQuery({
+  const { data: students = [], isError, error: loadError } = useQuery({
     queryKey: ['student-options'],
     queryFn: authApi.studentOptions,
+    retry: false,
   });
   const [memberId, setMemberId] = useState<number | ''>('');
   const [pin, setPin] = useState('');
@@ -106,9 +107,16 @@ function StudentLogin({
             </option>
           ))}
         </Select>
-        {students.length === 0 && (
+        {students.length === 0 && !isError && (
           <p className="text-xs text-gray-500 mt-1">
             등록된 참여자가 없습니다. 관리자에게 문의하세요.
+          </p>
+        )}
+        {isError && (
+          <p className="text-xs text-red-600 mt-1">
+            {(loadError as { response?: { status?: number } })?.response?.status === 403
+              ? '접근 코드가 필요합니다. 관리자에게 문의하세요.'
+              : '참여자 목록을 불러오지 못했습니다.'}
           </p>
         )}
       </div>

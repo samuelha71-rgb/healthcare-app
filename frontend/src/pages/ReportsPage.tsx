@@ -15,6 +15,7 @@ export function ReportsPage() {
     queryFn: membersApi.list,
   });
   const [memberId, setMemberId] = useState<number | null>(null);
+  const [backupWithPhotos, setBackupWithPhotos] = useState(false);
 
   const { data: member } = useQuery({
     queryKey: ['members', memberId],
@@ -58,14 +59,27 @@ export function ReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between print:hidden">
         <h1 className="text-2xl font-bold">리포트</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-2 text-sm text-gray-600">
+            <input
+              type="checkbox"
+              checked={backupWithPhotos}
+              onChange={(e) => setBackupWithPhotos(e.target.checked)}
+            />
+            사진 포함 (용량 큼)
+          </label>
           <Button
             variant="secondary"
             onClick={async () => {
               const token = localStorage.getItem('hc_token') ?? '';
-              const r = await fetch('/api/export/all', {
+              const qs = backupWithPhotos ? '?withPhotos=1' : '';
+              const r = await fetch(`/api/export/all${qs}`, {
                 headers: { 'x-auth-token': token },
               });
+              if (!r.ok) {
+                alert('백업에 실패했습니다. 다시 로그인 후 시도해 주세요.');
+                return;
+              }
               const blob = await r.blob();
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');

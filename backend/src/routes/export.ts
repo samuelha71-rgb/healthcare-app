@@ -10,25 +10,54 @@ exportRouter.get(
   '/all',
   requireAuth,
   requireAdmin,
-  asyncHandler(async (_req, res) => {
-    const [members, routines, workoutLogs, inbodyRecords, photos, goals] = await Promise.all([
-      prisma.member.findMany(),
-      prisma.routine.findMany({ include: { exercises: true, assignments: true } }),
-      prisma.workoutLog.findMany({ include: { sets: true } }),
-      prisma.inbodyRecord.findMany(),
-      // 사진은 데이터 제외하고 메타만 (용량 큼). 필요하면 ?withPhotos=1
-      prisma.photo.findMany(),
-      prisma.goal.findMany(),
-    ]);
+  asyncHandler(async (req, res) => {
+    const withPhotos = req.query.withPhotos === '1';
 
-    const data = {
-      exportedAt: new Date().toISOString(),
+    const [
       members,
       routines,
+      exercises,
       workoutLogs,
       inbodyRecords,
       photos,
       goals,
+      sleepLogs,
+      dietLogs,
+    ] = await Promise.all([
+      prisma.member.findMany(),
+      prisma.routine.findMany({ include: { exercises: true, assignments: true } }),
+      prisma.exercise.findMany(),
+      prisma.workoutLog.findMany({ include: { sets: true } }),
+      prisma.inbodyRecord.findMany(),
+      withPhotos
+        ? prisma.photo.findMany()
+        : prisma.photo.findMany({
+            select: {
+              id: true,
+              memberId: true,
+              date: true,
+              mime: true,
+              caption: true,
+              createdAt: true,
+            },
+          }),
+      prisma.goal.findMany(),
+      prisma.sleepLog.findMany(),
+      prisma.dietLog.findMany({ include: { items: { orderBy: { orderIndex: 'asc' } } } }),
+    ]);
+
+    const data = {
+      exportedAt: new Date().toISOString(),
+      photosIncludeData: withPhotos,
+      members,
+      routines,
+      exercises,
+      workoutLogs,
+      inbodyRecords,
+      photos,
+      goals,
+      sleepLogs,
+      dietLogs,
     };
 
     res.setHeader('Content-Type', 'application/json; charset=utf-8');

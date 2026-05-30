@@ -4,13 +4,16 @@ import { z } from 'zod';
 import { prisma } from '../prisma';
 import { asyncHandler, HttpError } from '../middleware/error';
 import { hashPin, isPinHashed, verifyPin } from '../utils/pin';
+import { createAdminToken } from '../utils/admin-token';
+import { assertClassAccess } from '../utils/class-access';
 
 export const authRouter = Router();
 
 // 로그인 화면용 — 이름 + ID만 (PIN 노출 안함)
 authRouter.get(
   '/students',
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
+    assertClassAccess(req);
     const members = await prisma.member.findMany({
       select: { id: true, name: true },
       orderBy: { name: 'asc' },
@@ -27,7 +30,7 @@ authRouter.post(
     if (password !== process.env.ADMIN_PASSWORD) {
       throw new HttpError(401, '비밀번호가 틀렸습니다');
     }
-    res.json({ token: `admin:${password}`, role: 'admin' as const });
+    res.json({ token: `admin:${createAdminToken()}`, role: 'admin' as const });
   }),
 );
 
