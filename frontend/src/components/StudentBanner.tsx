@@ -2,10 +2,9 @@ import { useState } from 'react';
 
 /**
  * 학생 "내 정보" 상단 배너.
- * `frontend/public/student-banner.jpg` 파일이 존재할 때만 표시됩니다.
+ * `frontend/public/student-banner.jpg`
  *
- * 가로가 넓어질수록 배너 높이도 함께 커지게 해서( clamp + vw ),
- * object-cover로 잘릴 때도 하단(햄스터)이 보이도록 object-bottom 고정.
+ * 가로·세로 화면 모두에서 햄스터가 잘리지 않도록 object-contain 사용.
  */
 export function StudentBanner({
   src = '/student-banner.jpg',
@@ -20,13 +19,13 @@ export function StudentBanner({
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-50
-        h-[clamp(13rem,22vw,24rem)]"
+      className="relative w-full overflow-hidden rounded-xl border border-gray-200
+        bg-neutral-900 h-[clamp(11rem,min(36vw,38vh),22rem)]"
     >
       <img
         src={src}
         alt={alt}
-        className="absolute inset-0 h-full w-full object-cover object-bottom"
+        className="absolute inset-0 h-full w-full object-contain object-center"
         loading="lazy"
         onError={(e) => {
           const img = e.currentTarget;
