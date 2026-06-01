@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
-/** 2000×400 (5:1) — 컨테이너도 같은 비율로 맞춰 전체 화면에서 잘리지 않음 */
-const BANNER_SRC = '/student-banner.jpg?v=wide2';
+/** 원본 전체가 보이도록 contain + 축소 (잘림 없음) */
+const BANNER_SRC = '/student-banner-source.jpg?v=fit1';
 
 export function StudentBanner({ alt = '학생 배너' }: { alt?: string }) {
   const [visible, setVisible] = useState(true);
@@ -9,20 +9,27 @@ export function StudentBanner({ alt = '학생 배너' }: { alt?: string }) {
   if (!visible) return null;
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
-      <div className="relative w-full aspect-[5/1] max-h-[min(26rem,42vh)]">
+    <div className="w-full overflow-hidden rounded-xl border border-gray-200 bg-neutral-800">
+      <div className="flex w-full items-center justify-center px-3 py-3 sm:px-4 sm:py-4">
         <img
           src={BANNER_SRC}
           alt={alt}
-          className="absolute inset-0 h-full w-full object-cover object-center"
+          className="h-auto w-auto max-h-[130px] max-w-[min(88%,28rem)] object-contain sm:max-h-[150px] lg:max-h-[175px] xl:max-h-[195px]"
           loading="lazy"
           onError={(e) => {
             const img = e.currentTarget;
-            if (img.src.includes('student-banner.svg')) {
-              setVisible(false);
+            const step = img.dataset.fallback ?? 'source';
+            if (step === 'source') {
+              img.dataset.fallback = 'jpg';
+              img.src = '/student-banner.jpg?v=fit1';
               return;
             }
-            img.src = '/student-banner.svg';
+            if (step === 'jpg') {
+              img.dataset.fallback = 'svg';
+              img.src = '/student-banner.svg';
+              return;
+            }
+            setVisible(false);
           }}
         />
       </div>
