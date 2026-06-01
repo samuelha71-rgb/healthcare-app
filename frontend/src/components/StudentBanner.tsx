@@ -20,7 +20,7 @@ export function StudentBanner({
       <img
         src={src}
         alt={alt}
-        className="block w-full h-40 md:h-48 object-cover object-[center_40%]"
+        className="block w-full h-40 md:h-48 object-cover object-[center_72%]"
         loading="lazy"
         onError={(e) => {
           const img = e.currentTarget;
