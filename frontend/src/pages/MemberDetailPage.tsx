@@ -64,7 +64,11 @@ export function MemberDetailPage() {
 
   return (
     <div className="space-y-6">
-      {isStudent && <StudentBanner alt="학생 배너" />}
+      {isStudent && (
+        <div className="-mx-8 -mt-8 mb-2">
+          <StudentBanner alt="학생 배너" />
+        </div>
+      )}
       <div>
         {!isStudent && (
           <Link to="/members" className="text-sm text-indigo-600 hover:underline">
