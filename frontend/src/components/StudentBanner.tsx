@@ -1,18 +1,14 @@
-/** 원본 사진을 가로 전체에 cover로 채움 (가운데 네모·검은 여백 없음) */
-const BANNER_URL = '/student-banner-source.jpg?v=fullbleed5';
+/** 크롭된 배너 파일(90% 기준) — CSS가 아니라 이미지 자체에 위치 반영 */
+const BANNER_SRC = '/student-banner.jpg?pos=90';
 
 export function StudentBanner({ alt = '학생 배너' }: { alt?: string }) {
   return (
-    <div
-      role="img"
-      aria-label={alt}
-      className="block w-full bg-cover bg-no-repeat"
-      style={{
-        backgroundImage: `url('${BANNER_URL}')`,
-        backgroundPosition: 'center 90%',
-        aspectRatio: '5 / 1',
-        minHeight: '10.5rem',
-      }}
+    <img
+      src={BANNER_SRC}
+      alt={alt}
+      className="block w-full aspect-[5/1] min-h-[10.5rem] object-cover object-center"
+      loading="eager"
+      decoding="async"
     />
   );
 }
