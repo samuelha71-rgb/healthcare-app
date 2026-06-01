@@ -1,5 +1,5 @@
 /** 크롭된 배너 파일(90% 기준) — CSS가 아니라 이미지 자체에 위치 반영 */
-const BANNER_SRC = '/student-banner.jpg?pos=90';
+const BANNER_SRC = '/student-banner.jpg?pos=70';
 
 export function StudentBanner({ alt = '학생 배너' }: { alt?: string }) {
   return (
