@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
-/** 2400×480 (5:1) 합성 배너 — 가로 꽉 채우고 햄스터 전체 노출 */
-const BANNER_SRC = '/student-banner.jpg?v=fill2';
+/** 2400×480 cover 크롭 배너 — 가로 전체를 사진으로 채움 */
+const BANNER_SRC = '/student-banner.jpg?v=fill3';
 
 export function StudentBanner({ alt = '학생 배너' }: { alt?: string }) {
   const [visible, setVisible] = useState(true);
@@ -9,7 +9,7 @@ export function StudentBanner({ alt = '학생 배너' }: { alt?: string }) {
   if (!visible) return null;
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-gray-200 bg-neutral-900">
+    <div className="w-full overflow-hidden rounded-xl border border-gray-200">
       <div className="relative w-full aspect-[5/1]">
         <img
           src={BANNER_SRC}
@@ -19,11 +19,11 @@ export function StudentBanner({ alt = '학생 배너' }: { alt?: string }) {
           onError={(e) => {
             const img = e.currentTarget;
             if (img.dataset.fallback === 'source') {
-              img.dataset.fallback = 'done';
-              img.src = '/student-banner-source.jpg?v=fill1';
+              setVisible(false);
               return;
             }
-            setVisible(false);
+            img.dataset.fallback = 'source';
+            img.src = '/student-banner-source.jpg?v=fill3';
           }}
         />
       </div>
