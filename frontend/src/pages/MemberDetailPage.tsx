@@ -14,6 +14,7 @@ import { GoalsSection } from '@/features/GoalsSection';
 import { MemberComparison } from '@/features/MemberComparison';
 import { fmtDate } from '@/utils/format';
 import { useAuth } from '@/auth/AuthContext';
+import { StudentBanner } from '@/components/StudentBanner';
 
 export function MemberDetailPage() {
   const params = useParams();
@@ -63,10 +64,13 @@ export function MemberDetailPage() {
 
   return (
     <div className="space-y-6">
+      {isStudent && <StudentBanner alt="학생 배너" />}
       <div>
-        <Link to="/members" className="text-sm text-indigo-600 hover:underline">
-          ← 대상 목록
-        </Link>
+        {!isStudent && (
+          <Link to="/members" className="text-sm text-indigo-600 hover:underline">
+            ← 대상 목록
+          </Link>
+        )}
         <h1 className="text-2xl font-bold mt-2">{member.name}</h1>
         <p className="text-sm text-gray-500 mt-1">
           {member.gender === 'male' ? '남' : member.gender === 'female' ? '여' : ''}
