@@ -12,6 +12,7 @@ import { InbodyForm } from '@/features/InbodyForm';
 import { PhotosSection } from '@/features/PhotosSection';
 import { GoalsSection } from '@/features/GoalsSection';
 import { MemberComparison } from '@/features/MemberComparison';
+import { RoutineCard } from '@/features/RoutineCard';
 import { fmtDate } from '@/utils/format';
 import { useAuth } from '@/auth/AuthContext';
 import { StudentBanner } from '@/components/StudentBanner';
@@ -186,7 +187,7 @@ export function MemberDetailPage() {
   );
 }
 
-// 배정된 루틴을 요일별로 묶어서 표시 — 운동 목록까지 펼쳐 보여줌
+// 배정된 루틴을 요일별로 묶어 컴팩트 카드로 표시 — 카드 클릭 시 상세 모달
 function RoutinesByWeekday({
   assignments,
 }: {
@@ -221,18 +222,23 @@ function RoutinesByWeekday({
   return (
     <Card>
       <h2 className="font-semibold mb-3">내 루틴 (요일별)</h2>
+      <p className="text-xs text-gray-500 mb-3">
+        카드를 클릭하면 운동 방법·주의사항·이미지를 자세히 볼 수 있어요.
+      </p>
       <div className="space-y-4">
         {WEEKDAY_LABELS.map((label, i) => {
           const list = byDay[i];
           if (!list || list.length === 0) return null;
           return (
             <div key={i}>
-              <div className="font-semibold text-indigo-700 mb-2">
-                {label}요일
-              </div>
-              <div className="space-y-3 pl-3 border-l-2 border-indigo-100">
+              <div className="font-semibold text-indigo-700 mb-2">{label}요일</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {list.map((a) => (
-                  <RoutineDetail key={a.routine.id} routine={a.routine} />
+                  <RoutineCard
+                    key={a.routine.id}
+                    routine={a.routine}
+                    showAssignments={false}
+                  />
                 ))}
               </div>
             </div>
@@ -241,53 +247,18 @@ function RoutinesByWeekday({
         {noDay.length > 0 && (
           <div>
             <div className="font-semibold text-gray-600 mb-2">요일 무관</div>
-            <div className="space-y-3 pl-3 border-l-2 border-gray-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {noDay.map((a) => (
-                <RoutineDetail key={a.routine.id} routine={a.routine} />
+                <RoutineCard
+                  key={a.routine.id}
+                  routine={a.routine}
+                  showAssignments={false}
+                />
               ))}
             </div>
           </div>
         )}
       </div>
     </Card>
-  );
-}
-
-function RoutineDetail({ routine }: { routine: import('@/types').Routine }) {
-  return (
-    <div className="text-sm">
-      <div className="font-medium">{routine.name}</div>
-      {routine.description && (
-        <p className="text-gray-600 text-xs mt-0.5">{routine.description}</p>
-      )}
-      {routine.exercises.length > 0 && (
-        <ul className="mt-2 space-y-1.5">
-          {routine.exercises.map((ex) => {
-            const inst = ex.exercise?.instructions ?? ex.instructions;
-            const caut = ex.exercise?.cautions ?? ex.cautions;
-            return (
-              <li key={ex.id} className="text-xs text-gray-700">
-                <div>
-                  • <span className="font-medium">{ex.exerciseName}</span>
-                  {ex.exercise?.bodyPart && (
-                    <span className="text-gray-400 ml-1">[{ex.exercise.bodyPart}]</span>
-                  )}
-                  {ex.targetSets && (
-                    <span className="text-gray-500 ml-1">
-                      {ex.targetSets}세트 × {ex.targetReps ?? '-'}회
-                      {ex.targetWeight ? ` @ ${ex.targetWeight}kg` : ''}
-                    </span>
-                  )}
-                </div>
-                {inst && <p className="ml-3 text-gray-600 whitespace-pre-line">{inst}</p>}
-                {caut && (
-                  <p className="ml-3 text-red-500 whitespace-pre-line">⚠ {caut}</p>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
   );
 }

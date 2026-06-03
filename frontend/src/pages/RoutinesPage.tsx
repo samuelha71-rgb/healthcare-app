@@ -4,7 +4,6 @@ import { routinesApi, type RoutineInput } from '@/api/routines';
 import { membersApi } from '@/api/members';
 import { exercisesApi } from '@/api/exercises';
 import {
-  Badge,
   Button,
   Card,
   EmptyState,
@@ -16,6 +15,7 @@ import {
 import type { Routine } from '@/types';
 import { WEEKDAY_LABELS } from '@/types';
 import { useAuth } from '@/auth/AuthContext';
+import { RoutineCard } from '@/features/RoutineCard';
 
 export function RoutinesPage() {
   const qc = useQueryClient();
@@ -63,11 +63,28 @@ export function RoutinesPage() {
             <RoutineCard
               key={r.id}
               routine={r}
-              isAdmin={isAdmin}
-              onEdit={() => setEditing(r)}
-              onDelete={() => {
-                if (confirm('루틴을 삭제할까요?')) remove.mutate(r.id);
-              }}
+              footer={
+                isAdmin ? (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setEditing(r)}
+                      className="flex-1 !py-1 !text-xs"
+                    >
+                      수정
+                    </Button>
+                    <Button
+                      variant="danger"
+                      onClick={() => {
+                        if (confirm('루틴을 삭제할까요?')) remove.mutate(r.id);
+                      }}
+                      className="flex-1 !py-1 !text-xs"
+                    >
+                      삭제
+                    </Button>
+                  </div>
+                ) : undefined
+              }
             />
           ))}
         </div>
@@ -357,224 +374,3 @@ function RoutineFormModal({
   );
 }
 
-// 한 루틴을 매우 컴팩트한 카드로 — 클릭 시 상세 모달
-function RoutineCard({
-  routine: r,
-  isAdmin,
-  onEdit,
-  onDelete,
-}: {
-  routine: Routine;
-  isAdmin: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const [showDetail, setShowDetail] = useState(false);
-  return (
-    <>
-      <Card
-        className="!p-3 flex flex-col gap-2 cursor-pointer hover:shadow-md transition"
-        onClick={() => setShowDetail(true)}
-      >
-        {/* 헤더: 이름 + 요일 뱃지 */}
-        <div>
-          <div className="font-semibold">{r.name}</div>
-          <div className="flex items-center gap-1 flex-wrap mt-1">
-            {r.weekdays.length === 0 ? (
-              <Badge color="gray">요일 무관</Badge>
-            ) : (
-              r.weekdays
-                .slice()
-                .sort((a, b) => a - b)
-                .map((w) => (
-                  <Badge key={w} color="blue">
-                    {WEEKDAY_LABELS[w]}
-                  </Badge>
-                ))
-            )}
-          </div>
-        </div>
-
-        {/* 배정된 학생 */}
-        {r.assignments && r.assignments.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {r.assignments.map((a) => (
-              <Badge key={a.memberId} color="green">
-                {a.member.name}
-              </Badge>
-            ))}
-          </div>
-        )}
-
-        {/* 짧은 운동 목록 — 부위 + 이름만 */}
-        {r.exercises.length > 0 && (
-          <ul className="text-xs space-y-0.5 text-gray-700">
-            {r.exercises.map((ex) => (
-              <li key={ex.id}>
-                {ex.exercise?.bodyPart && (
-                  <span className="text-gray-400">[{ex.exercise.bodyPart}] </span>
-                )}
-                <span>{ex.exerciseName}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <p className="text-xs text-indigo-500 mt-auto pt-1">
-          클릭하면 자세히 보기 →
-        </p>
-
-        {/* 관리자 액션 */}
-        {isAdmin && (
-          <div
-            className="flex gap-2 pt-2 border-t"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Button variant="secondary" onClick={onEdit} className="flex-1 !py-1 !text-xs">
-              수정
-            </Button>
-            <Button variant="danger" onClick={onDelete} className="flex-1 !py-1 !text-xs">
-              삭제
-            </Button>
-          </div>
-        )}
-      </Card>
-
-      {showDetail && (
-        <RoutineDetailModal routine={r} onClose={() => setShowDetail(false)} />
-      )}
-    </>
-  );
-}
-
-// 루틴 상세 모달 — 모든 운동의 방법/주의사항/이미지 표시
-function RoutineDetailModal({
-  routine: r,
-  onClose,
-}: {
-  routine: Routine;
-  onClose: () => void;
-}) {
-  return (
-    <Modal open onClose={onClose} title={r.name}>
-      <div className="space-y-4">
-        {/* 메타 정보 */}
-        <div className="flex items-center gap-1 flex-wrap">
-          {r.weekdays.length === 0 ? (
-            <Badge color="gray">요일 무관</Badge>
-          ) : (
-            r.weekdays
-              .slice()
-              .sort((a, b) => a - b)
-              .map((w) => (
-                <Badge key={w} color="blue">
-                  {WEEKDAY_LABELS[w]}요일
-                </Badge>
-              ))
-          )}
-        </div>
-
-        {r.assignments && r.assignments.length > 0 && (
-          <div className="text-sm">
-            <span className="text-gray-500">배정: </span>
-            <span className="flex flex-wrap gap-1 inline-flex">
-              {r.assignments.map((a) => (
-                <Badge key={a.memberId} color="green">
-                  {a.member.name}
-                </Badge>
-              ))}
-            </span>
-          </div>
-        )}
-
-        {r.description && (
-          <p className="text-sm text-gray-700 whitespace-pre-line">{r.description}</p>
-        )}
-
-        {/* 운동 상세 — 각 운동의 모든 정보 */}
-        {r.exercises.length === 0 ? (
-          <p className="text-sm text-gray-500">등록된 운동이 없습니다.</p>
-        ) : (
-          <div className="space-y-4">
-            {r.exercises.map((ex) => {
-              const inst = ex.exercise?.instructions ?? ex.instructions;
-              const caut = ex.exercise?.cautions ?? ex.cautions;
-              const reps = ex.exercise?.reps;
-              const images =
-                ex.exercise?.images && ex.exercise.images.length > 0
-                  ? ex.exercise.images.map((i) => i.data)
-                  : ex.exercise?.imageData
-                    ? [ex.exercise.imageData]
-                    : [];
-
-              return (
-                <div
-                  key={ex.id}
-                  className="border-l-4 border-indigo-300 pl-3 py-1 space-y-2"
-                >
-                  <div className="font-semibold">
-                    {ex.exerciseName}
-                    {ex.exercise?.bodyPart && (
-                      <span className="text-gray-400 font-normal ml-2 text-sm">
-                        [{ex.exercise.bodyPart}]
-                      </span>
-                    )}
-                  </div>
-
-                  {(ex.targetSets || ex.targetReps || ex.targetWeight) && (
-                    <p className="text-sm text-gray-700">
-                      목표:{' '}
-                      {ex.targetSets && <span>{ex.targetSets}세트</span>}
-                      {ex.targetReps && <span> × {ex.targetReps}회</span>}
-                      {ex.targetWeight && <span> @ {ex.targetWeight}kg</span>}
-                    </p>
-                  )}
-
-                  {reps && (
-                    <p className="text-sm">
-                      <span className="font-medium text-gray-700">권장 횟수: </span>
-                      <span className="text-indigo-700">{reps}</span>
-                    </p>
-                  )}
-
-                  {images.length > 0 && (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
-                      {images.map((src, i) => (
-                        <a
-                          key={i}
-                          href={src}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block aspect-square"
-                        >
-                          <img
-                            src={src}
-                            alt=""
-                            className="w-full h-full object-cover rounded border hover:opacity-80 transition"
-                          />
-                        </a>
-                      ))}
-                    </div>
-                  )}
-
-                  {inst && (
-                    <div className="text-sm">
-                      <p className="font-medium text-gray-700">방법</p>
-                      <p className="text-gray-600 whitespace-pre-line">{inst}</p>
-                    </div>
-                  )}
-                  {caut && (
-                    <div className="text-sm">
-                      <p className="font-medium text-red-700">⚠ 주의사항</p>
-                      <p className="text-red-600 whitespace-pre-line">{caut}</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </Modal>
-  );
-}
