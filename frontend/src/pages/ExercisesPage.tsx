@@ -122,13 +122,7 @@ export function ExercisesPage() {
                       <div className="font-semibold">{ex.name}</div>
                       {ex.bodyPart && <Badge color="blue">{ex.bodyPart}</Badge>}
                     </div>
-                    {ex.imageData && (
-                      <img
-                        src={ex.imageData}
-                        alt={ex.name}
-                        className="w-full rounded-lg border object-cover max-h-48"
-                      />
-                    )}
+                    <ExerciseImageGallery exercise={ex} />
                     {ex.instructions && (
                       <div className="text-xs">
                         <p className="font-medium text-gray-700">방법</p>
@@ -206,21 +200,31 @@ function ExerciseFormModal({
   const [bodyPart, setBodyPart] = useState(exercise?.bodyPart ?? '');
   const [instructions, setInstructions] = useState(exercise?.instructions ?? '');
   const [cautions, setCautions] = useState(exercise?.cautions ?? '');
-  const [imageData, setImageData] = useState<string | null>(exercise?.imageData ?? null);
-  const [imageMime, setImageMime] = useState<string | null>(exercise?.imageMime ?? null);
+
+  // 신규 이미지 + 기존 단일 이미지(레거시) 합쳐서 시작
+  const initialImages = exercise?.images?.length
+    ? exercise.images.map((i) => ({ data: i.data, mime: i.mime }))
+    : exercise?.imageData && exercise?.imageMime
+      ? [{ data: exercise.imageData, mime: exercise.imageMime }]
+      : [];
+  const [images, setImages] = useState<{ data: string; mime: string }[]>(initialImages);
   const [compressing, setCompressing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const MAX_IMAGES = 10;
+
+  const onPickFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
     setCompressing(true);
     try {
-      const { data, mime } = await compressImage(file);
-      setImageData(data);
-      setImageMime(mime);
+      const compressed = await Promise.all(
+        files.map((f) => compressImage(f, 700, 0.78)),
+      );
+      setImages((curr) => [...curr, ...compressed].slice(0, MAX_IMAGES));
     } finally {
       setCompressing(false);
+      if (fileRef.current) fileRef.current.value = '';
     }
   };
 
@@ -231,8 +235,7 @@ function ExerciseFormModal({
         bodyPart: bodyPart || null,
         instructions: instructions || null,
         cautions: cautions || null,
-        imageData,
-        imageMime,
+        images,
       };
       return exercise
         ? exercisesApi.update(exercise.id, data)
@@ -271,37 +274,40 @@ function ExerciseFormModal({
           />
         </div>
         <div>
-          <Label>방법 이미지 (선택)</Label>
-          {imageData && (
-            <div className="mb-2 relative inline-block">
-              <img
-                src={imageData}
-                alt="미리보기"
-                className="max-h-40 rounded-lg border"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setImageData(null);
-                  setImageMime(null);
-                  if (fileRef.current) fileRef.current.value = '';
-                }}
-                className="absolute top-1 right-1 bg-white/90 rounded-full px-2 py-0.5 text-xs hover:bg-white border"
-              >
-                ✕ 제거
-              </button>
+          <Label>방법 이미지 (최대 {MAX_IMAGES}장)</Label>
+          {images.length > 0 && (
+            <div className="grid grid-cols-4 gap-2 mb-2">
+              {images.map((img, i) => (
+                <div key={i} className="relative aspect-square">
+                  <img
+                    src={img.data}
+                    alt=""
+                    className="w-full h-full object-cover rounded border"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setImages((curr) => curr.filter((_, idx) => idx !== i))}
+                    className="absolute top-0.5 right-0.5 bg-white/90 rounded-full w-5 h-5 text-xs hover:bg-white border leading-none"
+                    title="이 이미지 제거"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
             </div>
           )}
           <input
             ref={fileRef}
             type="file"
             accept="image/*"
-            onChange={onPickImage}
+            multiple
+            onChange={onPickFiles}
+            disabled={images.length >= MAX_IMAGES}
             className="block text-sm"
           />
           {compressing && <p className="text-xs text-gray-500 mt-1">이미지 압축 중...</p>}
           <p className="text-xs text-gray-500 mt-1">
-            동작 자세나 운동 부위를 보여주는 이미지를 첨부하면 학생들이 이해하기 쉬워요.
+            {images.length}/{MAX_IMAGES}장 — 자세별로 여러 컷을 올리면 학생이 이해하기 쉬워요.
           </p>
         </div>
         <div>
@@ -322,5 +328,29 @@ function ExerciseFormModal({
         </div>
       </div>
     </Modal>
+  );
+}
+
+// 운동 카드 안의 이미지 갤러리 — 작은 썸네일, 클릭 시 원본 크기 새 탭
+function ExerciseImageGallery({ exercise }: { exercise: Exercise }) {
+  const items =
+    exercise.images && exercise.images.length > 0
+      ? exercise.images.map((i) => i.data)
+      : exercise.imageData
+        ? [exercise.imageData]
+        : [];
+  if (items.length === 0) return null;
+  return (
+    <div className="grid grid-cols-3 gap-1">
+      {items.map((src, i) => (
+        <a key={i} href={src} target="_blank" rel="noopener noreferrer" className="block aspect-square">
+          <img
+            src={src}
+            alt=""
+            className="w-full h-full object-cover rounded border hover:opacity-80 transition"
+          />
+        </a>
+      ))}
+    </div>
   );
 }

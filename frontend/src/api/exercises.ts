@@ -6,8 +6,7 @@ export interface ExerciseInput {
   bodyPart?: string | null;
   instructions?: string | null;
   cautions?: string | null;
-  imageData?: string | null;
-  imageMime?: string | null;
+  images?: Array<{ data: string; mime: string }>;
 }
 
 export const exercisesApi = {

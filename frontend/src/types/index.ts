@@ -30,14 +30,24 @@ export interface MemberDetail extends Member {
   };
 }
 
+export interface ExerciseImage {
+  id: number;
+  data: string;
+  mime: string;
+  orderIndex: number;
+}
+
 export interface Exercise {
   id: number;
   name: string;
   bodyPart?: string | null;
   instructions?: string | null;
   cautions?: string | null;
+  // 레거시 단일 이미지 (구버전 데이터 호환)
   imageData?: string | null;
   imageMime?: string | null;
+  // 신규 다중 이미지
+  images?: ExerciseImage[];
 }
 
 export interface SleepLog {

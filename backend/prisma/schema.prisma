@@ -54,12 +54,26 @@ model Exercise {
   bodyPart     String?  // "가슴", "등", "어깨", "팔", "다리", "둔근", "복부", "유산소", "전신"
   instructions String?  // 방법/자세
   cautions     String?  // 주의사항
-  imageData    String?  // data URL base64 (방법 설명용 이미지)
-  imageMime    String?  // image/jpeg 등
+  imageData    String?  // (deprecated) 단일 이미지 — images 사용
+  imageMime    String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   routineUses  RoutineExercise[]
+  images       ExerciseImage[]
+}
+
+// 운동 설명 이미지 — 여러 장 지원
+model ExerciseImage {
+  id         Int      @id @default(autoincrement())
+  exerciseId Int
+  data       String   // data URL base64
+  mime       String
+  orderIndex Int      @default(0)
+
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([exerciseId])
 }
 
 // 루틴에 포함된 운동들
