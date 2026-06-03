@@ -14,6 +14,12 @@ const exerciseInput = z.object({
   bodyPart: z.string().optional().nullable(),
   instructions: z.string().optional().nullable(),
   cautions: z.string().optional().nullable(),
+  imageData: z.string().optional().nullable(),
+  imageMime: z
+    .string()
+    .regex(/^image\//)
+    .optional()
+    .nullable(),
 });
 
 exercisesRouter.get(
@@ -46,6 +52,9 @@ exercisesRouter.post(
   requireAdmin,
   asyncHandler(async (req, res) => {
     const data = exerciseInput.parse(req.body);
+    if (data.imageData && data.imageData.length > 1_500_000) {
+      throw new HttpError(413, '이미지가 너무 큽니다 (1MB 이하로 압축됩니다)');
+    }
     const ex = await prisma.exercise.create({ data });
     res.status(201).json(ex);
   }),
@@ -58,6 +67,9 @@ exercisesRouter.patch(
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     const data = exerciseInput.partial().parse(req.body);
+    if (data.imageData && data.imageData.length > 1_500_000) {
+      throw new HttpError(413, '이미지가 너무 큽니다 (1MB 이하로 압축됩니다)');
+    }
     const ex = await prisma.exercise.update({ where: { id }, data });
     res.json(ex);
   }),

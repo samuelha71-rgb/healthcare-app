@@ -36,6 +36,8 @@ export interface Exercise {
   bodyPart?: string | null;
   instructions?: string | null;
   cautions?: string | null;
+  imageData?: string | null;
+  imageMime?: string | null;
 }
 
 export interface SleepLog {

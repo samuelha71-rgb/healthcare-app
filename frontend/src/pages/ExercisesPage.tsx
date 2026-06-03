@@ -1,6 +1,6 @@
 // 운동 라이브러리 — 부위별로 모아둔 운동 모음
 // 관리자: 추가/수정/삭제, 학생: 열람만
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { exercisesApi, type ExerciseInput } from '@/api/exercises';
 import {
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui';
 import { BODY_PARTS, type Exercise } from '@/types';
 import { useAuth } from '@/auth/AuthContext';
+import { compressImage } from '@/utils/image';
 
 export function ExercisesPage() {
   const qc = useQueryClient();
@@ -121,6 +122,13 @@ export function ExercisesPage() {
                       <div className="font-semibold">{ex.name}</div>
                       {ex.bodyPart && <Badge color="blue">{ex.bodyPart}</Badge>}
                     </div>
+                    {ex.imageData && (
+                      <img
+                        src={ex.imageData}
+                        alt={ex.name}
+                        className="w-full rounded-lg border object-cover max-h-48"
+                      />
+                    )}
                     {ex.instructions && (
                       <div className="text-xs">
                         <p className="font-medium text-gray-700">방법</p>
@@ -198,6 +206,23 @@ function ExerciseFormModal({
   const [bodyPart, setBodyPart] = useState(exercise?.bodyPart ?? '');
   const [instructions, setInstructions] = useState(exercise?.instructions ?? '');
   const [cautions, setCautions] = useState(exercise?.cautions ?? '');
+  const [imageData, setImageData] = useState<string | null>(exercise?.imageData ?? null);
+  const [imageMime, setImageMime] = useState<string | null>(exercise?.imageMime ?? null);
+  const [compressing, setCompressing] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCompressing(true);
+    try {
+      const { data, mime } = await compressImage(file);
+      setImageData(data);
+      setImageMime(mime);
+    } finally {
+      setCompressing(false);
+    }
+  };
 
   const save = useMutation({
     mutationFn: () => {
@@ -206,6 +231,8 @@ function ExerciseFormModal({
         bodyPart: bodyPart || null,
         instructions: instructions || null,
         cautions: cautions || null,
+        imageData,
+        imageMime,
       };
       return exercise
         ? exercisesApi.update(exercise.id, data)
@@ -242,6 +269,40 @@ function ExerciseFormModal({
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
           />
+        </div>
+        <div>
+          <Label>방법 이미지 (선택)</Label>
+          {imageData && (
+            <div className="mb-2 relative inline-block">
+              <img
+                src={imageData}
+                alt="미리보기"
+                className="max-h-40 rounded-lg border"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setImageData(null);
+                  setImageMime(null);
+                  if (fileRef.current) fileRef.current.value = '';
+                }}
+                className="absolute top-1 right-1 bg-white/90 rounded-full px-2 py-0.5 text-xs hover:bg-white border"
+              >
+                ✕ 제거
+              </button>
+            </div>
+          )}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            onChange={onPickImage}
+            className="block text-sm"
+          />
+          {compressing && <p className="text-xs text-gray-500 mt-1">이미지 압축 중...</p>}
+          <p className="text-xs text-gray-500 mt-1">
+            동작 자세나 운동 부위를 보여주는 이미지를 첨부하면 학생들이 이해하기 쉬워요.
+          </p>
         </div>
         <div>
           <Label>주의사항 (부상 예방, 자주 하는 실수 등)</Label>

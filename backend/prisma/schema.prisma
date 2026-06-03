@@ -54,6 +54,8 @@ model Exercise {
   bodyPart     String?  // "가슴", "등", "어깨", "팔", "다리", "둔근", "복부", "유산소", "전신"
   instructions String?  // 방법/자세
   cautions     String?  // 주의사항
+  imageData    String?  // data URL base64 (방법 설명용 이미지)
+  imageMime    String?  // image/jpeg 등
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
