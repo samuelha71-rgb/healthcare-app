@@ -80,7 +80,7 @@ membersRouter.post(
   asyncHandler(async (req, res) => {
     const data = memberInput.required({ pin: true }).parse(req.body);
     const member = await prisma.member.create({
-      data: { ...data, pin: await hashPin(data.pin) },
+      data: { ...data, pin: await hashPin(data.pin), pinPlain: data.pin },
     });
     res.status(201).json(memberForAdminResponse(member));
   }),
@@ -95,8 +95,8 @@ membersRouter.patch(
     const id = Number(req.params.id);
     const parsed = memberInput.partial().parse(req.body);
     const data =
-      parsed.pin !== undefined
-        ? { ...parsed, pin: parsed.pin ? await hashPin(parsed.pin) : parsed.pin }
+      parsed.pin
+        ? { ...parsed, pin: await hashPin(parsed.pin), pinPlain: parsed.pin }
         : parsed;
     const member = await prisma.member.update({ where: { id }, data });
     res.json(memberForAdminResponse(member));

@@ -50,7 +50,12 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
           if (!isPinHashed(member.pin)) {
             await prisma.member.update({
               where: { id },
-              data: { pin: await hashPin(pin) },
+              data: { pin: await hashPin(pin), pinPlain: pin },
+            });
+          } else if (!member.pinPlain) {
+            await prisma.member.update({
+              where: { id },
+              data: { pinPlain: pin },
             });
           }
           req.auth = { role: 'student', memberId: id };

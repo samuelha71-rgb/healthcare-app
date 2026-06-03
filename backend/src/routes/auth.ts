@@ -48,7 +48,13 @@ authRouter.post(
     if (!isPinHashed(member.pin)) {
       await prisma.member.update({
         where: { id: memberId },
-        data: { pin: await hashPin(pin) },
+        data: { pin: await hashPin(pin), pinPlain: pin },
+      });
+    } else if (!member.pinPlain) {
+      // 기존 해시 멤버 — 로그인 성공한 평문을 기억해서 관리자가 다시 알려줄 수 있게
+      await prisma.member.update({
+        where: { id: memberId },
+        data: { pinPlain: pin },
       });
     }
     res.json({

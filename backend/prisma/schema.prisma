@@ -14,7 +14,8 @@ datasource db {
 model Member {
   id        Int       @id @default(autoincrement())
   name      String
-  pin       String    // 학생 로그인용 PIN (관리자가 지정)
+  pin       String    // 학생 로그인용 PIN (관리자가 지정, bcrypt 해시 저장)
+  pinPlain  String?   // 관리자가 학생에게 PIN을 다시 알려줄 수 있도록 평문 보관
   age       Int?
   gender    String?   // "male" | "female" | "other"
   height    Float?    // cm

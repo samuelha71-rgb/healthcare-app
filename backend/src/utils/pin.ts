@@ -19,13 +19,18 @@ export async function verifyPin(plain: string, stored: string): Promise<boolean>
   return plain === stored;
 }
 
-/** 관리자 응답 — 해시된 PIN은 내용을 내려주지 않음 (프론트는 pinStoredSecurely로 표시) */
-export function memberForAdminResponse<M extends { pin: string }>(
-  member: M,
-): Omit<M, 'pin'> & { pin?: string; pinStoredSecurely: boolean } {
-  if (isPinHashed(member.pin)) {
-    const { pin: _p, ...rest } = member;
-    return { ...rest, pinStoredSecurely: true };
+/** 관리자 응답 — 평문 보관본(pinPlain)이 있으면 그대로 노출, 없으면 해시 숨김 */
+export function memberForAdminResponse<
+  M extends { pin: string; pinPlain?: string | null },
+>(member: M): Omit<M, 'pin' | 'pinPlain'> & { pin?: string; pinStoredSecurely: boolean } {
+  const { pin, pinPlain, ...rest } = member;
+  if (pinPlain) {
+    return { ...rest, pin: pinPlain, pinStoredSecurely: false };
   }
-  return { ...member, pinStoredSecurely: false };
+  if (!isPinHashed(pin)) {
+    // 레거시 평문 PIN — 그대로 노출
+    return { ...rest, pin, pinStoredSecurely: false };
+  }
+  // 해시만 있음 — 평문 알 수 없음
+  return { ...rest, pinStoredSecurely: true };
 }
