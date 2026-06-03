@@ -35,7 +35,10 @@ routinesRouter.get(
     if (req.auth?.role === 'student') {
       const routines = await prisma.routine.findMany({
         where: { assignments: { some: { memberId: req.auth.memberId } } },
-        include: { exercises: { orderBy: { orderIndex: 'asc' }, include: { exercise: true } } },
+        include: { exercises: {
+        orderBy: { orderIndex: 'asc' },
+        include: { exercise: { include: { images: { orderBy: { orderIndex: 'asc' } } } } },
+      } },
         orderBy: { id: 'asc' },
       });
       res.json(routines);
@@ -43,7 +46,10 @@ routinesRouter.get(
     }
     const routines = await prisma.routine.findMany({
       include: {
-        exercises: { orderBy: { orderIndex: 'asc' }, include: { exercise: true } },
+        exercises: {
+        orderBy: { orderIndex: 'asc' },
+        include: { exercise: { include: { images: { orderBy: { orderIndex: 'asc' } } } } },
+      },
         assignments: { include: { member: { select: { id: true, name: true } } } },
       },
       orderBy: { id: 'asc' },
@@ -60,7 +66,10 @@ routinesRouter.get(
     const routine = await prisma.routine.findUnique({
       where: { id },
       include: {
-        exercises: { orderBy: { orderIndex: 'asc' }, include: { exercise: true } },
+        exercises: {
+        orderBy: { orderIndex: 'asc' },
+        include: { exercise: { include: { images: { orderBy: { orderIndex: 'asc' } } } } },
+      },
         assignments: { include: { member: true } },
       },
     });
@@ -110,7 +119,10 @@ routinesRouter.patch(
       }
       return tx.routine.findUnique({
         where: { id: r.id },
-        include: { exercises: { orderBy: { orderIndex: 'asc' }, include: { exercise: true } } },
+        include: { exercises: {
+        orderBy: { orderIndex: 'asc' },
+        include: { exercise: { include: { images: { orderBy: { orderIndex: 'asc' } } } } },
+      } },
       });
     });
 

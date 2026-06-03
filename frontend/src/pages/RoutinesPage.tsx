@@ -357,7 +357,7 @@ function RoutineFormModal({
   );
 }
 
-// 한 루틴을 컴팩트한 카드로 — 모든 정보를 펼쳐서 표시
+// 한 루틴을 매우 컴팩트한 카드로 — 클릭 시 상세 모달
 function RoutineCard({
   routine: r,
   isAdmin,
@@ -369,12 +369,97 @@ function RoutineCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const [showDetail, setShowDetail] = useState(false);
   return (
-    <Card className="!p-3 flex flex-col gap-2">
-      {/* 헤더: 이름 + 요일 뱃지 */}
-      <div>
-        <div className="font-semibold">{r.name}</div>
-        <div className="flex items-center gap-1 flex-wrap mt-1">
+    <>
+      <Card
+        className="!p-3 flex flex-col gap-2 cursor-pointer hover:shadow-md transition"
+        onClick={() => setShowDetail(true)}
+      >
+        {/* 헤더: 이름 + 요일 뱃지 */}
+        <div>
+          <div className="font-semibold">{r.name}</div>
+          <div className="flex items-center gap-1 flex-wrap mt-1">
+            {r.weekdays.length === 0 ? (
+              <Badge color="gray">요일 무관</Badge>
+            ) : (
+              r.weekdays
+                .slice()
+                .sort((a, b) => a - b)
+                .map((w) => (
+                  <Badge key={w} color="blue">
+                    {WEEKDAY_LABELS[w]}
+                  </Badge>
+                ))
+            )}
+          </div>
+        </div>
+
+        {/* 배정된 학생 */}
+        {r.assignments && r.assignments.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {r.assignments.map((a) => (
+              <Badge key={a.memberId} color="green">
+                {a.member.name}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {/* 짧은 운동 목록 — 부위 + 이름만 */}
+        {r.exercises.length > 0 && (
+          <ul className="text-xs space-y-0.5 text-gray-700">
+            {r.exercises.map((ex) => (
+              <li key={ex.id}>
+                {ex.exercise?.bodyPart && (
+                  <span className="text-gray-400">[{ex.exercise.bodyPart}] </span>
+                )}
+                <span>{ex.exerciseName}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <p className="text-xs text-indigo-500 mt-auto pt-1">
+          클릭하면 자세히 보기 →
+        </p>
+
+        {/* 관리자 액션 */}
+        {isAdmin && (
+          <div
+            className="flex gap-2 pt-2 border-t"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button variant="secondary" onClick={onEdit} className="flex-1 !py-1 !text-xs">
+              수정
+            </Button>
+            <Button variant="danger" onClick={onDelete} className="flex-1 !py-1 !text-xs">
+              삭제
+            </Button>
+          </div>
+        )}
+      </Card>
+
+      {showDetail && (
+        <RoutineDetailModal routine={r} onClose={() => setShowDetail(false)} />
+      )}
+    </>
+  );
+}
+
+// 루틴 상세 모달 — 모든 운동의 방법/주의사항/이미지 표시
+function RoutineDetailModal({
+  routine: r,
+  onClose,
+}: {
+  routine: Routine;
+  onClose: () => void;
+}) {
+  return (
+    <Modal open onClose={onClose} title={r.name}>
+      <div className="space-y-4">
+        {/* 메타 정보 */}
+        <div className="flex items-center gap-1 flex-wrap">
           {r.weekdays.length === 0 ? (
             <Badge color="gray">요일 무관</Badge>
           ) : (
@@ -383,66 +468,113 @@ function RoutineCard({
               .sort((a, b) => a - b)
               .map((w) => (
                 <Badge key={w} color="blue">
-                  {WEEKDAY_LABELS[w]}
+                  {WEEKDAY_LABELS[w]}요일
                 </Badge>
               ))
           )}
         </div>
-      </div>
 
-      {/* 배정된 학생 */}
-      {r.assignments && r.assignments.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {r.assignments.map((a) => (
-            <Badge key={a.memberId} color="green">
-              {a.member.name}
-            </Badge>
-          ))}
-        </div>
-      )}
+        {r.assignments && r.assignments.length > 0 && (
+          <div className="text-sm">
+            <span className="text-gray-500">배정: </span>
+            <span className="flex flex-wrap gap-1 inline-flex">
+              {r.assignments.map((a) => (
+                <Badge key={a.memberId} color="green">
+                  {a.member.name}
+                </Badge>
+              ))}
+            </span>
+          </div>
+        )}
 
-      {/* 상세 내용 */}
-      {r.description && <p className="text-sm text-gray-600">{r.description}</p>}
-      {r.exercises.length > 0 && (
-        <ul className="space-y-2">
-          {r.exercises.map((ex) => {
-            const inst = ex.exercise?.instructions ?? ex.instructions;
-            const caut = ex.exercise?.cautions ?? ex.cautions;
-            return (
-              <li key={ex.id} className="text-xs border-l-2 border-indigo-200 pl-2">
-                <div className="font-medium">
-                  {ex.exerciseName}
-                  {ex.exercise?.bodyPart && (
-                    <span className="text-gray-400 font-normal ml-1">
-                      [{ex.exercise.bodyPart}]
-                    </span>
+        {r.description && (
+          <p className="text-sm text-gray-700 whitespace-pre-line">{r.description}</p>
+        )}
+
+        {/* 운동 상세 — 각 운동의 모든 정보 */}
+        {r.exercises.length === 0 ? (
+          <p className="text-sm text-gray-500">등록된 운동이 없습니다.</p>
+        ) : (
+          <div className="space-y-4">
+            {r.exercises.map((ex) => {
+              const inst = ex.exercise?.instructions ?? ex.instructions;
+              const caut = ex.exercise?.cautions ?? ex.cautions;
+              const reps = ex.exercise?.reps;
+              const images =
+                ex.exercise?.images && ex.exercise.images.length > 0
+                  ? ex.exercise.images.map((i) => i.data)
+                  : ex.exercise?.imageData
+                    ? [ex.exercise.imageData]
+                    : [];
+
+              return (
+                <div
+                  key={ex.id}
+                  className="border-l-4 border-indigo-300 pl-3 py-1 space-y-2"
+                >
+                  <div className="font-semibold">
+                    {ex.exerciseName}
+                    {ex.exercise?.bodyPart && (
+                      <span className="text-gray-400 font-normal ml-2 text-sm">
+                        [{ex.exercise.bodyPart}]
+                      </span>
+                    )}
+                  </div>
+
+                  {(ex.targetSets || ex.targetReps || ex.targetWeight) && (
+                    <p className="text-sm text-gray-700">
+                      목표:{' '}
+                      {ex.targetSets && <span>{ex.targetSets}세트</span>}
+                      {ex.targetReps && <span> × {ex.targetReps}회</span>}
+                      {ex.targetWeight && <span> @ {ex.targetWeight}kg</span>}
+                    </p>
                   )}
-                  {ex.targetSets && (
-                    <span className="text-gray-500 font-normal ml-1">
-                      {ex.targetSets}×{ex.targetReps ?? '-'}
-                      {ex.targetWeight ? ` @${ex.targetWeight}kg` : ''}
-                    </span>
+
+                  {reps && (
+                    <p className="text-sm">
+                      <span className="font-medium text-gray-700">권장 횟수: </span>
+                      <span className="text-indigo-700">{reps}</span>
+                    </p>
+                  )}
+
+                  {images.length > 0 && (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
+                      {images.map((src, i) => (
+                        <a
+                          key={i}
+                          href={src}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block aspect-square"
+                        >
+                          <img
+                            src={src}
+                            alt=""
+                            className="w-full h-full object-cover rounded border hover:opacity-80 transition"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  {inst && (
+                    <div className="text-sm">
+                      <p className="font-medium text-gray-700">방법</p>
+                      <p className="text-gray-600 whitespace-pre-line">{inst}</p>
+                    </div>
+                  )}
+                  {caut && (
+                    <div className="text-sm">
+                      <p className="font-medium text-red-700">⚠ 주의사항</p>
+                      <p className="text-red-600 whitespace-pre-line">{caut}</p>
+                    </div>
                   )}
                 </div>
-                {inst && <p className="text-gray-600 whitespace-pre-line">{inst}</p>}
-                {caut && <p className="text-red-600 whitespace-pre-line">⚠ {caut}</p>}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      {/* 관리자 액션 */}
-      {isAdmin && (
-        <div className="flex gap-2 mt-auto pt-2 border-t">
-          <Button variant="secondary" onClick={onEdit} className="flex-1 !py-1 !text-xs">
-            수정
-          </Button>
-          <Button variant="danger" onClick={onDelete} className="flex-1 !py-1 !text-xs">
-            삭제
-          </Button>
-        </div>
-      )}
-    </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </Modal>
   );
 }

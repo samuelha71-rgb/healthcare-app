@@ -45,7 +45,13 @@ membersRouter.get(
               include: {
                 exercises: {
                   orderBy: { orderIndex: 'asc' },
-                  include: { exercise: true },
+                  include: {
+                    exercise: {
+                      include: {
+                        images: { orderBy: { orderIndex: 'asc' } },
+                      },
+                    },
+                  },
                 },
               },
             },
