@@ -140,6 +140,7 @@ function RoutineFormModal({
     routine?.exercises.map((e) => ({
       exerciseId: e.exerciseId ?? null,
       exerciseName: e.exerciseName,
+      weekdays: e.weekdays ?? [],
       targetSets: e.targetSets,
       targetReps: e.targetReps,
       targetWeight: e.targetWeight,
@@ -284,6 +285,7 @@ function RoutineFormModal({
                   {
                     exerciseId: null,
                     exerciseName: '',
+                    weekdays: [],
                     orderIndex: exercises?.length ?? 0,
                   },
                 ])
@@ -331,6 +333,41 @@ function RoutineFormModal({
                       ×
                     </Button>
                   </div>
+
+                  {/* 이 운동을 할 요일 — 비우면 루틴의 모든 요일에 적용 */}
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">
+                      요일 (비우면 루틴 요일 전체)
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {WEEKDAY_LABELS.map((w, di) => {
+                        const checked = (ex.weekdays ?? []).includes(di);
+                        return (
+                          <button
+                            key={di}
+                            type="button"
+                            onClick={() => {
+                              const curr = ex.weekdays ?? [];
+                              updateEx(i, {
+                                weekdays: checked
+                                  ? curr.filter((d) => d !== di)
+                                  : [...curr, di],
+                              });
+                            }}
+                            className={
+                              'px-2 py-1 rounded text-xs font-medium border transition ' +
+                              (checked
+                                ? 'bg-indigo-600 border-indigo-600 text-white'
+                                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50')
+                            }
+                          >
+                            {w}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-3 gap-2">
                     <Input
                       type="number"

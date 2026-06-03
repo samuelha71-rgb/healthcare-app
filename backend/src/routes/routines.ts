@@ -10,6 +10,7 @@ export const routinesRouter = Router();
 const exerciseInput = z.object({
   exerciseId: z.number().int().optional().nullable(),
   exerciseName: z.string().min(1),
+  weekdays: z.array(z.number().int().min(0).max(6)).optional(),
   targetSets: z.number().int().positive().optional().nullable(),
   targetReps: z.number().int().positive().optional().nullable(),
   targetWeight: z.number().positive().optional().nullable(),

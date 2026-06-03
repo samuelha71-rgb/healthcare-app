@@ -84,6 +84,7 @@ model RoutineExercise {
   routineId     Int
   exerciseId    Int?                  // 라이브러리 참조
   exerciseName  String                // 표시용 (라이브러리 선택 시 자동 채움)
+  weekdays      Int[]                 // 이 운동을 하는 요일 [0=일..6=토]. 비어있으면 루틴의 모든 요일에 적용
   targetSets    Int?
   targetReps    Int?
   targetWeight  Float?

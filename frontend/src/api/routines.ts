@@ -10,6 +10,7 @@ export interface RoutineInput {
   exercises?: Array<{
     exerciseId?: number | null;
     exerciseName: string;
+    weekdays?: number[];
     targetSets?: number | null;
     targetReps?: number | null;
     targetWeight?: number | null;

@@ -111,6 +111,7 @@ export interface RoutineExercise {
   routineId: number;
   exerciseId?: number | null;
   exerciseName: string;
+  weekdays?: number[]; // 비어있으면 루틴의 모든 요일에 적용
   targetSets?: number | null;
   targetReps?: number | null;
   targetWeight?: number | null;
