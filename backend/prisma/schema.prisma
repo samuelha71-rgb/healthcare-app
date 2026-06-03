@@ -52,6 +52,7 @@ model Exercise {
   id           Int      @id @default(autoincrement())
   name         String
   bodyPart     String?  // "가슴", "등", "어깨", "팔", "다리", "둔근", "복부", "유산소", "전신"
+  reps         String?  // 권장 횟수 (자유 텍스트: "10회 × 3세트", "30초", "양쪽 12회" 등)
   instructions String?  // 방법/자세
   cautions     String?  // 주의사항
   imageData    String?  // (deprecated) 단일 이미지 — images 사용

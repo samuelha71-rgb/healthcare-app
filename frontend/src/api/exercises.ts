@@ -4,6 +4,7 @@ import type { Exercise } from '@/types';
 export interface ExerciseInput {
   name: string;
   bodyPart?: string | null;
+  reps?: string | null;
   instructions?: string | null;
   cautions?: string | null;
   images?: Array<{ data: string; mime: string }>;

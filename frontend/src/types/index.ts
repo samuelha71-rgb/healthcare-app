@@ -41,6 +41,7 @@ export interface Exercise {
   id: number;
   name: string;
   bodyPart?: string | null;
+  reps?: string | null;
   instructions?: string | null;
   cautions?: string | null;
   // 레거시 단일 이미지 (구버전 데이터 호환)

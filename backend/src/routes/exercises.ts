@@ -15,6 +15,7 @@ const imageItem = z.object({
 const exerciseInput = z.object({
   name: z.string().min(1),
   bodyPart: z.string().optional().nullable(),
+  reps: z.string().optional().nullable(),
   instructions: z.string().optional().nullable(),
   cautions: z.string().optional().nullable(),
   images: z.array(imageItem).max(10).optional(),

@@ -123,6 +123,12 @@ export function ExercisesPage() {
                       {ex.bodyPart && <Badge color="blue">{ex.bodyPart}</Badge>}
                     </div>
                     <ExerciseImageGallery exercise={ex} />
+                    {ex.reps && (
+                      <div className="text-xs">
+                        <p className="font-medium text-gray-700">횟수</p>
+                        <p className="text-indigo-700 font-medium">{ex.reps}</p>
+                      </div>
+                    )}
                     {ex.instructions && (
                       <div className="text-xs">
                         <p className="font-medium text-gray-700">방법</p>
@@ -198,6 +204,7 @@ function ExerciseFormModal({
 }) {
   const [name, setName] = useState(exercise?.name ?? '');
   const [bodyPart, setBodyPart] = useState(exercise?.bodyPart ?? '');
+  const [reps, setReps] = useState(exercise?.reps ?? '');
   const [instructions, setInstructions] = useState(exercise?.instructions ?? '');
   const [cautions, setCautions] = useState(exercise?.cautions ?? '');
 
@@ -233,6 +240,7 @@ function ExerciseFormModal({
       const data: ExerciseInput = {
         name,
         bodyPart: bodyPart || null,
+        reps: reps || null,
         instructions: instructions || null,
         cautions: cautions || null,
         images,
@@ -264,6 +272,14 @@ function ExerciseFormModal({
               </option>
             ))}
           </Select>
+        </div>
+        <div>
+          <Label>횟수 (권장)</Label>
+          <Input
+            value={reps}
+            onChange={(e) => setReps(e.target.value)}
+            placeholder="예: 10회 × 3세트 / 30초 / 양쪽 12회"
+          />
         </div>
         <div>
           <Label>방법 (자세, 호흡 등)</Label>
