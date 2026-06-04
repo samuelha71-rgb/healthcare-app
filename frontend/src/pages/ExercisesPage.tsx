@@ -188,7 +188,7 @@ function ExerciseTile({
     >
       <div className="aspect-square bg-gray-50 flex items-center justify-center text-2xl text-gray-300">
         {firstImage ? (
-          <img
+          <img loading="lazy"
             src={firstImage}
             alt={ex.name}
             className="w-full h-full object-cover"
@@ -360,7 +360,7 @@ function ExerciseFormModal({
             <div className="grid grid-cols-4 gap-2 mb-2">
               {images.map((img, i) => (
                 <div key={i} className="relative">
-                  <img
+                  <img loading="lazy"
                     src={img.data}
                     alt=""
                     className="w-full h-auto rounded border"
@@ -425,7 +425,7 @@ function ExerciseImageGallery({ exercise }: { exercise: Exercise }) {
     <div className="grid grid-cols-3 gap-1">
       {items.map((src, i) => (
         <a key={i} href={src} target="_blank" rel="noopener noreferrer" className="block">
-          <img
+          <img loading="lazy"
             src={src}
             alt=""
             className="w-full h-auto rounded border hover:opacity-80 transition"

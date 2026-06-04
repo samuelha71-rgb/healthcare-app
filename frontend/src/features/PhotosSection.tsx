@@ -84,7 +84,7 @@ export function PhotosSection({ memberId }: { memberId: number }) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {photos.map((p) => (
             <div key={p.id} className="relative group">
-              <img
+              <img loading="lazy"
                 src={p.data}
                 alt={p.caption ?? ''}
                 className="w-full h-auto rounded-lg border"

@@ -22,12 +22,30 @@ photosRouter.get(
   asyncHandler(async (req, res) => {
     const studentId = memberIdFilter(req);
     const memberId = studentId ?? (req.query.memberId ? Number(req.query.memberId) : undefined);
+
+    // 누가 사용해도 응답이 폭주하지 않도록 기본 한도
+    const limitRaw = req.query.limit ? Number(req.query.limit) : undefined;
+    const limit = limitRaw && limitRaw > 0 && limitRaw <= 200 ? limitRaw : 100;
+    // 메타만 vs 실제 이미지 데이터 포함 — 기본은 데이터 포함(현재 UX 유지)
+    const metaOnly = req.query.metaOnly === '1';
+
     const photos = await prisma.photo.findMany({
       where: { ...(memberId && { memberId }) },
-      orderBy: { date: 'asc' },
-      // 사진 데이터(큰 base64) 포함해서 보냄 — 갤러리에 직접 표시
+      orderBy: { date: 'desc' },
+      take: limit,
+      ...(metaOnly && {
+        select: {
+          id: true,
+          memberId: true,
+          date: true,
+          mime: true,
+          caption: true,
+          createdAt: true,
+        },
+      }),
     });
-    res.json(photos);
+    // 화면 표시는 오래된 순이 자연스러우니 역순으로 반환
+    res.json(photos.reverse());
   }),
 );
 

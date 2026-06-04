@@ -14,7 +14,7 @@ export function DashboardPage() {
 
   const { data: recentLogs = [] } = useQuery({
     queryKey: ['workout-logs', 'recent'],
-    queryFn: () => workoutLogsApi.list(),
+    queryFn: () => workoutLogsApi.list({ limit: 30 }),
   });
 
   const last7days = recentLogs.filter((l) => {

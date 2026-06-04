@@ -168,7 +168,7 @@ export function RoutineDetailModal({
                           rel="noopener noreferrer"
                           className="block"
                         >
-                          <img
+                          <img loading="lazy"
                             src={src}
                             alt=""
                             className="w-full h-auto rounded border hover:opacity-80 transition"
@@ -368,7 +368,7 @@ function ExerciseDetail({ ex }: { ex: Routine['exercises'][number] }) {
               rel="noopener noreferrer"
               className="block aspect-square"
             >
-              <img
+              <img loading="lazy"
                 src={src}
                 alt=""
                 className="w-full h-full object-cover rounded border hover:opacity-80 transition"

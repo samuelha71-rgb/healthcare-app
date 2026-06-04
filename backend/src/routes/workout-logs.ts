@@ -34,6 +34,9 @@ workoutLogsRouter.get(
 
     const from = req.query.from ? new Date(String(req.query.from)) : undefined;
     const to = req.query.to ? new Date(String(req.query.to)) : undefined;
+    // 기록이 누적될 때 응답 폭주를 막기 위한 한도
+    const limitRaw = req.query.limit ? Number(req.query.limit) : undefined;
+    const limit = limitRaw && limitRaw > 0 && limitRaw <= 1000 ? limitRaw : undefined;
 
     const logs = await prisma.workoutLog.findMany({
       where: {
@@ -44,6 +47,7 @@ workoutLogsRouter.get(
       },
       include: { sets: true },
       orderBy: { date: 'desc' },
+      take: limit,
     });
     res.json(logs);
   }),

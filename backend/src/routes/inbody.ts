@@ -23,11 +23,14 @@ inbodyRouter.get(
   asyncHandler(async (req, res) => {
     const studentId = memberIdFilter(req);
     const memberId = studentId ?? (req.query.memberId ? Number(req.query.memberId) : undefined);
+    const limitRaw = req.query.limit ? Number(req.query.limit) : undefined;
+    const limit = limitRaw && limitRaw > 0 && limitRaw <= 500 ? limitRaw : 365;
     const records = await prisma.inbodyRecord.findMany({
       where: { ...(memberId && { memberId }) },
-      orderBy: { date: 'asc' },
+      orderBy: { date: 'desc' },
+      take: limit,
     });
-    res.json(records);
+    res.json(records.reverse());
   }),
 );
 

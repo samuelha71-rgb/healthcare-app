@@ -17,7 +17,7 @@ export interface LogInput {
 }
 
 export const workoutLogsApi = {
-  list: (params?: { memberId?: number; from?: string; to?: string }) =>
+  list: (params?: { memberId?: number; from?: string; to?: string; limit?: number }) =>
     api.get<WorkoutLog[]>('/workout-logs', { params }).then((r) => r.data),
   get: (id: number) => api.get<WorkoutLog>(`/workout-logs/${id}`).then((r) => r.data),
   create: (data: LogInput) => api.post<WorkoutLog>('/workout-logs', data).then((r) => r.data),
