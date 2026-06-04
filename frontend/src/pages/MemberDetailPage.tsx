@@ -13,6 +13,7 @@ import { PhotosSection } from '@/features/PhotosSection';
 import { GoalsSection } from '@/features/GoalsSection';
 import { MemberComparison } from '@/features/MemberComparison';
 import { RoutineCard } from '@/features/RoutineCard';
+import { LogDetailModal } from '@/features/LogDetailModal';
 import { fmtDate } from '@/utils/format';
 import { useAuth } from '@/auth/AuthContext';
 import { StudentBanner } from '@/components/StudentBanner';
@@ -54,6 +55,7 @@ export function MemberDetailPage() {
   });
 
   const [showInbody, setShowInbody] = useState(false);
+  const [openLog, setOpenLog] = useState<import('@/types').WorkoutLog | null>(null);
 
   if (!member) return <p>로딩 중...</p>;
 
@@ -163,7 +165,11 @@ export function MemberDetailPage() {
         ) : (
           <ul className="divide-y">
             {logs.slice(0, 10).map((l) => (
-              <li key={l.id} className="py-2 flex items-center justify-between">
+              <li
+                key={l.id}
+                onClick={() => setOpenLog(l)}
+                className="py-2 flex items-center justify-between cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded transition"
+              >
                 <div>
                   <span className="font-medium">{fmtDate(l.date)}</span>
                   <span className="text-sm text-gray-500 ml-3">
@@ -183,6 +189,10 @@ export function MemberDetailPage() {
 
       <GoalsSection memberId={id} />
       <PhotosSection memberId={id} />
+
+      {openLog && (
+        <LogDetailModal log={openLog} onClose={() => setOpenLog(null)} />
+      )}
     </div>
   );
 }
