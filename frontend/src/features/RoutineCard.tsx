@@ -98,7 +98,7 @@ export function RoutineDetailModal({
   onClose: () => void;
 }) {
   return (
-    <Modal open onClose={onClose} title={r.name}>
+    <Modal open onClose={onClose} title={r.name} size="2xl">
       <div className="space-y-4">
         <div className="flex items-center gap-1 flex-wrap">
           {r.weekdays.length === 0 ? (

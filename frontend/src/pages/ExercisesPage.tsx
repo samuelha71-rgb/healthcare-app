@@ -219,7 +219,7 @@ function ExerciseDetailModal({
   onDelete: () => void;
 }) {
   return (
-    <Modal open onClose={onClose} title={ex.name}>
+    <Modal open onClose={onClose} title={ex.name} size="2xl">
       <div className="space-y-4">
         {ex.bodyPart && <Badge color="blue">{ex.bodyPart}</Badge>}
         <ExerciseImageGallery exercise={ex} />
