@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { membersApi } from '@/api/members';
 import { workoutLogsApi } from '@/api/workout-logs';
 import { inbodyApi } from '@/api/inbody';
 import { statsApi } from '@/api/stats';
-import { Badge, Card, EmptyState } from '@/components/ui';
+import { Badge, Card, EmptyState, Modal } from '@/components/ui';
 import { fmtDate } from '@/utils/format';
 import { MemberComparison } from '@/features/MemberComparison';
 import type { Member, WorkoutLog, InbodyRecord } from '@/types';
@@ -32,6 +32,9 @@ export function DashboardPage() {
     const d = new Date(l.date).getTime();
     return Date.now() - d < 7 * 24 * 60 * 60 * 1000;
   });
+
+  const [openLog, setOpenLog] = useState<WorkoutLog | null>(null);
+  const openMember = openLog && members.find((m) => m.id === openLog.memberId);
 
   return (
     <div className="space-y-6">
@@ -70,12 +73,136 @@ export function DashboardPage() {
                 member={members.find((m) => m.id === log.memberId)}
                 stat={stats.find((s) => s.memberId === log.memberId)}
                 lastInbody={findLatestInbody(inbodyAll, log.memberId)}
+                onClick={() => setOpenLog(log)}
               />
             ))}
           </ul>
         )}
       </Card>
+
+      {openLog && (
+        <LogDetailModal
+          log={openLog}
+          member={openMember ?? undefined}
+          onClose={() => setOpenLog(null)}
+        />
+      )}
     </div>
+  );
+}
+
+// 한 운동 기록 전체 보기 — 운동별 세트 전부 + 메타 정보
+function LogDetailModal({
+  log,
+  member,
+  onClose,
+}: {
+  log: WorkoutLog;
+  member?: Member;
+  onClose: () => void;
+}) {
+  // 운동별로 세트 그루핑
+  const byExercise = useMemo(() => {
+    const m = new Map<string, typeof log.sets>();
+    for (const s of log.sets) {
+      const cur = m.get(s.exerciseName) ?? [];
+      cur.push(s);
+      m.set(s.exerciseName, cur);
+    }
+    return Array.from(m.entries()).map(([name, sets]) => ({
+      name,
+      sets: sets.slice().sort((a, b) => a.setNumber - b.setNumber),
+      totalVolume: sets.reduce((sum, s) => sum + (s.reps ?? 0) * (s.weight ?? 0), 0),
+    }));
+  }, [log.sets]);
+
+  const totalVolume = byExercise.reduce((s, e) => s + e.totalVolume, 0);
+  const title = `${member?.name ?? `#${log.memberId}`} — ${fmtDate(log.date)}`;
+
+  return (
+    <Modal open onClose={onClose} title={title} size="2xl">
+      <div className="space-y-4">
+        {/* 메타 컨디션 */}
+        <div className="flex flex-wrap gap-2 text-sm">
+          {log.condition != null && (
+            <Badge color="blue">컨디션 {log.condition}/5</Badge>
+          )}
+          {log.rpe != null && (
+            <Badge color={log.rpe >= 9 ? 'red' : log.rpe >= 7 ? 'yellow' : 'gray'}>
+              RPE {log.rpe}/10
+            </Badge>
+          )}
+          {log.painArea && <Badge color="red">⚠ 통증: {log.painArea}</Badge>}
+          <Badge color="gray">{log.sets.length}세트</Badge>
+          {totalVolume > 0 && (
+            <Badge color="gray">총 볼륨 {totalVolume.toLocaleString()}kg</Badge>
+          )}
+        </div>
+
+        {/* 메모 */}
+        {log.note && (
+          <div className="bg-gray-50 border-l-4 border-gray-300 px-3 py-2 text-sm text-gray-700 italic whitespace-pre-line">
+            {log.note}
+          </div>
+        )}
+
+        {/* 운동별 세트 상세 */}
+        {byExercise.length === 0 ? (
+          <p className="text-sm text-gray-500">기록된 세트가 없습니다.</p>
+        ) : (
+          <div className="space-y-3">
+            {byExercise.map((ex) => (
+              <div
+                key={ex.name}
+                className="border rounded-lg p-3 bg-white"
+              >
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">{ex.name}</h3>
+                  <span className="text-xs text-gray-500">
+                    {ex.sets.length}세트
+                    {ex.totalVolume > 0 && ` · 볼륨 ${ex.totalVolume.toLocaleString()}kg`}
+                  </span>
+                </div>
+                <table className="w-full text-sm mt-2">
+                  <thead>
+                    <tr className="text-left text-xs text-gray-500 border-b">
+                      <th className="py-1.5 w-12">세트</th>
+                      <th className="py-1.5">횟수</th>
+                      <th className="py-1.5">무게(kg)</th>
+                      <th className="py-1.5">볼륨</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ex.sets.map((s) => (
+                      <tr key={s.id} className="border-b last:border-0">
+                        <td className="py-1.5 font-medium">{s.setNumber}</td>
+                        <td className="py-1.5">{s.reps ?? '-'}</td>
+                        <td className="py-1.5">{s.weight ?? '-'}</td>
+                        <td className="py-1.5 text-gray-500">
+                          {s.reps != null && s.weight != null
+                            ? `${(s.reps * s.weight).toLocaleString()}kg`
+                            : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 학생 페이지로 이동 */}
+        <div className="pt-3 border-t">
+          <a
+            href={`/members/${log.memberId}`}
+            className="text-sm text-indigo-600 hover:underline"
+          >
+            {member?.name ?? '학생'} 상세 페이지로 이동 →
+          </a>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -90,6 +217,7 @@ function RecentLogItem({
   member,
   stat,
   lastInbody,
+  onClick,
 }: {
   log: WorkoutLog;
   member?: Member;
@@ -101,6 +229,7 @@ function RecentLogItem({
     avgRpe: number;
   };
   lastInbody?: InbodyRecord;
+  onClick: () => void;
 }) {
   // 같은 운동을 여러 세트 하면 그루핑해서 최고/총 정보
   const byExercise = useMemo(() => {
@@ -121,12 +250,16 @@ function RecentLogItem({
   const dayLabel = daysAgo === 0 ? '오늘' : daysAgo === 1 ? '어제' : `${daysAgo}일 전`;
 
   return (
-    <li className="py-3">
+    <li
+      className="py-3 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded transition"
+      onClick={onClick}
+    >
       {/* 윗줄: 학생 정보 + 날짜 */}
       <div className="flex items-start justify-between flex-wrap gap-1">
         <div className="flex items-center gap-2 flex-wrap">
           <Link
             to={`/members/${log.memberId}`}
+            onClick={(e) => e.stopPropagation()}
             className="font-semibold text-indigo-600 hover:underline"
           >
             {member?.name ?? `#${log.memberId}`}
