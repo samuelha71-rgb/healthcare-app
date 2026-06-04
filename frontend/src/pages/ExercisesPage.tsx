@@ -422,7 +422,7 @@ function ExerciseImageGallery({ exercise }: { exercise: Exercise }) {
         : [];
   if (items.length === 0) return null;
   return (
-    <div className="grid grid-cols-3 gap-1">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
       {items.map((src, i) => (
         <a key={i} href={src} target="_blank" rel="noopener noreferrer" className="block">
           <img loading="lazy"

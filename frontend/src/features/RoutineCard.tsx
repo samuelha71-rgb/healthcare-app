@@ -159,7 +159,7 @@ export function RoutineDetailModal({
                   )}
 
                   {images.length > 0 && (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {images.map((src, i) => (
                         <a
                           key={i}
@@ -359,19 +359,19 @@ function ExerciseDetail({ ex }: { ex: Routine['exercises'][number] }) {
         </p>
       )}
       {images.length > 0 && (
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {images.map((src, i) => (
             <a
               key={i}
               href={src}
               target="_blank"
               rel="noopener noreferrer"
-              className="block aspect-square"
+              className="block"
             >
               <img loading="lazy"
                 src={src}
                 alt=""
-                className="w-full h-full object-cover rounded border hover:opacity-80 transition"
+                className="w-full h-auto rounded border hover:opacity-80 transition"
               />
             </a>
           ))}
