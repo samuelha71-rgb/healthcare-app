@@ -87,7 +87,7 @@ export function PhotosSection({ memberId }: { memberId: number }) {
               <img
                 src={p.data}
                 alt={p.caption ?? ''}
-                className="w-full aspect-square object-cover rounded-lg border"
+                className="w-full h-auto rounded-lg border"
               />
               <div className="text-xs text-gray-600 mt-1">
                 {fmtDate(p.date)}

@@ -294,11 +294,11 @@ function ExerciseFormModal({
           {images.length > 0 && (
             <div className="grid grid-cols-4 gap-2 mb-2">
               {images.map((img, i) => (
-                <div key={i} className="relative aspect-square">
+                <div key={i} className="relative">
                   <img
                     src={img.data}
                     alt=""
-                    className="w-full h-full object-cover rounded border"
+                    className="w-full h-auto rounded border"
                   />
                   <button
                     type="button"
@@ -359,11 +359,11 @@ function ExerciseImageGallery({ exercise }: { exercise: Exercise }) {
   return (
     <div className="grid grid-cols-3 gap-1">
       {items.map((src, i) => (
-        <a key={i} href={src} target="_blank" rel="noopener noreferrer" className="block aspect-square">
+        <a key={i} href={src} target="_blank" rel="noopener noreferrer" className="block">
           <img
             src={src}
             alt=""
-            className="w-full h-full object-cover rounded border hover:opacity-80 transition"
+            className="w-full h-auto rounded border hover:opacity-80 transition"
           />
         </a>
       ))}

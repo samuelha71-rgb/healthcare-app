@@ -184,12 +184,12 @@ export function RoutineDetailModal({
                           href={src}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="block aspect-square"
+                          className="block"
                         >
                           <img
                             src={src}
                             alt=""
-                            className="w-full h-full object-cover rounded border hover:opacity-80 transition"
+                            className="w-full h-auto rounded border hover:opacity-80 transition"
                           />
                         </a>
                       ))}
