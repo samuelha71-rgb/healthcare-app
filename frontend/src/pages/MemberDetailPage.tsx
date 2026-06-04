@@ -14,6 +14,7 @@ import { GoalsSection } from '@/features/GoalsSection';
 import { MemberComparison } from '@/features/MemberComparison';
 import { RoutineCard } from '@/features/RoutineCard';
 import { LogDetailModal } from '@/features/LogDetailModal';
+import { SleepDietReport } from '@/features/SleepDietReport';
 import { fmtDate } from '@/utils/format';
 import { useAuth } from '@/auth/AuthContext';
 import { StudentBanner } from '@/components/StudentBanner';
@@ -186,6 +187,8 @@ export function MemberDetailPage() {
       </Card>
 
       <RoutinesByWeekday assignments={member.routineAssignments} />
+
+      <SleepDietReport memberId={id} />
 
       <GoalsSection memberId={id} />
       <PhotosSection memberId={id} />

@@ -1,8 +1,11 @@
 // 운동 기록 상세 모달 — 관리자/학생 공용
-// withMember=true 면 학생 이름/날짜를 타이틀에 표시 (관리자 화면용)
+// 그날 작성한 모든 페이지를 한 화면에 (운동 + 수면 + 식단)
 import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Badge, Modal } from '@/components/ui';
 import { fmtDate } from '@/utils/format';
+import { sleepApi } from '@/api/sleep';
+import { dietApi } from '@/api/diet';
 import type { Member, WorkoutLog } from '@/types';
 
 export function LogDetailModal({
@@ -16,6 +19,17 @@ export function LogDetailModal({
   withMember?: boolean;
   onClose: () => void;
 }) {
+  // 그날의 수면/식단도 함께 (memberId+date 기준)
+  const dayStr = log.date.slice(0, 10);
+  const { data: sleep } = useQuery({
+    queryKey: ['sleep', log.memberId, dayStr],
+    queryFn: () => sleepApi.byDate(log.memberId, dayStr),
+  });
+  const { data: diet } = useQuery({
+    queryKey: ['diet', log.memberId, dayStr],
+    queryFn: () => dietApi.byDate(log.memberId, dayStr),
+  });
+
   const byExercise = useMemo(() => {
     const m = new Map<string, typeof log.sets>();
     for (const s of log.sets) {
@@ -60,6 +74,44 @@ export function LogDetailModal({
           </div>
         )}
 
+        {/* 수면 */}
+        {sleep && (
+          <div className="border rounded-lg p-3 bg-blue-50">
+            <h3 className="font-semibold mb-1 text-blue-900">😴 수면</h3>
+            <p className="text-sm">
+              <span className="font-medium">{sleep.hours}시간</span>
+              {sleep.note && <span className="text-gray-600 italic ml-2">— {sleep.note}</span>}
+            </p>
+          </div>
+        )}
+
+        {/* 식단 */}
+        {diet && diet.items && diet.items.length > 0 && (
+          <div className="border rounded-lg p-3 bg-amber-50">
+            <h3 className="font-semibold mb-2 text-amber-900">🍽 식단</h3>
+            <ul className="flex flex-wrap gap-1.5">
+              {diet.items.map((it) => (
+                <li
+                  key={it.id ?? `${it.foodName}-${it.orderIndex}`}
+                  className="bg-white rounded-full px-2.5 py-1 text-xs border flex items-center gap-1"
+                >
+                  <span className="font-medium">{it.foodName}</span>
+                  <Badge
+                    color={it.amount === '많이' ? 'red' : it.amount === '적당히' ? 'green' : 'gray'}
+                  >
+                    {it.amount}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+            {diet.note && (
+              <p className="text-xs text-gray-600 italic mt-2">— {diet.note}</p>
+            )}
+          </div>
+        )}
+
+        {/* 운동 */}
+        <h3 className="font-semibold pt-2">💪 운동</h3>
         {byExercise.length === 0 ? (
           <p className="text-sm text-gray-500">기록된 세트가 없습니다.</p>
         ) : (

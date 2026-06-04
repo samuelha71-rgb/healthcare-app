@@ -67,10 +67,12 @@ function SleepBlock({ memberId, date }: { memberId: number; date: string }) {
   const [hours, setHours] = useState<string>('');
   const [note, setNote] = useState('');
 
+  // 대상/날짜가 바뀌면 그날 기록을 불러와 폼에 채워주기 (저장 후 자동 재로드는 막음)
   useEffect(() => {
     setHours(existing?.hours ? String(existing.hours) : '');
     setNote(existing?.note ?? '');
-  }, [existing?.id, existing?.hours, existing?.note]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memberId, date, existing?.id ? 1 : 0]);
 
   const save = useMutation({
     mutationFn: () =>
@@ -82,6 +84,9 @@ function SleepBlock({ memberId, date }: { memberId: number; date: string }) {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sleep'] });
+      // 저장 후 폼 비우기 (워크아웃 폼과 동일한 흐름)
+      setHours('');
+      setNote('');
       alert('수면 기록 저장됨');
     },
   });
@@ -132,6 +137,7 @@ function DietBlock({ memberId, date }: { memberId: number; date: string }) {
   const [foodName, setFoodName] = useState('');
   const [amount, setAmount] = useState<DietAmount>('적당히');
 
+  // 대상/날짜가 바뀌면 그날 기록을 불러와 폼에 채워주기 (저장 후엔 비우기만)
   useEffect(() => {
     setItems(
       existing?.items?.map((it) => ({
@@ -141,7 +147,8 @@ function DietBlock({ memberId, date }: { memberId: number; date: string }) {
       })) ?? [],
     );
     setNote(existing?.note ?? '');
-  }, [existing?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memberId, date, existing?.id ? 1 : 0]);
 
   const addItem = (name: string, amt: DietAmount = amount) => {
     if (!name.trim()) return;
@@ -159,6 +166,11 @@ function DietBlock({ memberId, date }: { memberId: number; date: string }) {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['diet'] });
+      // 저장 후 폼 전부 비우기
+      setItems([]);
+      setNote('');
+      setFoodName('');
+      setAmount('적당히');
       alert('식단 기록 저장됨');
     },
   });
