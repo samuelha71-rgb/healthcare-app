@@ -32,6 +32,7 @@ export function ExercisesPage() {
   const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<Exercise | null>(null);
+  const [viewing, setViewing] = useState<Exercise | null>(null);
 
   const remove = useMutation({
     mutationFn: exercisesApi.remove,
@@ -115,55 +116,13 @@ export function ExercisesPage() {
                   ({grouped[key].length})
                 </span>
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
                 {grouped[key].map((ex) => (
-                  <Card key={ex.id} className="!p-3 flex flex-col gap-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="font-semibold">{ex.name}</div>
-                      {ex.bodyPart && <Badge color="blue">{ex.bodyPart}</Badge>}
-                    </div>
-                    <ExerciseImageGallery exercise={ex} />
-                    {ex.reps && (
-                      <div className="text-xs">
-                        <p className="font-medium text-gray-700">횟수</p>
-                        <p className="text-indigo-700 font-medium">{ex.reps}</p>
-                      </div>
-                    )}
-                    {ex.instructions && (
-                      <div className="text-xs">
-                        <p className="font-medium text-gray-700">방법</p>
-                        <p className="text-gray-600 whitespace-pre-line">
-                          {ex.instructions}
-                        </p>
-                      </div>
-                    )}
-                    {ex.cautions && (
-                      <div className="text-xs">
-                        <p className="font-medium text-red-700">⚠ 주의사항</p>
-                        <p className="text-red-600 whitespace-pre-line">{ex.cautions}</p>
-                      </div>
-                    )}
-                    {isAdmin && (
-                      <div className="flex gap-2 mt-auto pt-2 border-t">
-                        <Button
-                          variant="secondary"
-                          onClick={() => setEditing(ex)}
-                          className="flex-1 !py-1 !text-xs"
-                        >
-                          수정
-                        </Button>
-                        <Button
-                          variant="danger"
-                          onClick={() => {
-                            if (confirm(`"${ex.name}"을(를) 삭제할까요?`)) remove.mutate(ex.id);
-                          }}
-                          className="flex-1 !py-1 !text-xs"
-                        >
-                          삭제
-                        </Button>
-                      </div>
-                    )}
-                  </Card>
+                  <ExerciseTile
+                    key={ex.id}
+                    exercise={ex}
+                    onClick={() => setViewing(ex)}
+                  />
                 ))}
               </div>
             </div>
@@ -187,7 +146,116 @@ export function ExercisesPage() {
           onDone={() => qc.invalidateQueries({ queryKey: ['exercises'] })}
         />
       )}
+      {viewing && (
+        <ExerciseDetailModal
+          key={viewing.id}
+          exercise={viewing}
+          isAdmin={isAdmin}
+          onClose={() => setViewing(null)}
+          onEdit={() => {
+            setEditing(viewing);
+            setViewing(null);
+          }}
+          onDelete={() => {
+            if (confirm(`"${viewing.name}"을(를) 삭제할까요?`)) {
+              remove.mutate(viewing.id);
+              setViewing(null);
+            }
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+// 컴팩트 타일 — 정사각형 이미지 + 이름만, 클릭 시 상세 모달
+function ExerciseTile({
+  exercise: ex,
+  onClick,
+}: {
+  exercise: Exercise;
+  onClick: () => void;
+}) {
+  const firstImage =
+    ex.images && ex.images.length > 0
+      ? ex.images[0].data
+      : ex.imageData || null;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-left bg-white rounded-lg border hover:shadow-md hover:border-indigo-300 transition overflow-hidden flex flex-col"
+    >
+      <div className="aspect-square bg-gray-50 flex items-center justify-center text-3xl text-gray-300">
+        {firstImage ? (
+          <img
+            src={firstImage}
+            alt={ex.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          '🏋️'
+        )}
+      </div>
+      <div className="px-2 py-1.5">
+        <div className="text-sm font-medium truncate">{ex.name}</div>
+        {ex.bodyPart && (
+          <div className="text-xs text-gray-500">{ex.bodyPart}</div>
+        )}
+      </div>
+    </button>
+  );
+}
+
+// 상세 모달 — 모든 정보 + 관리자 액션
+function ExerciseDetailModal({
+  exercise: ex,
+  isAdmin,
+  onClose,
+  onEdit,
+  onDelete,
+}: {
+  exercise: Exercise;
+  isAdmin: boolean;
+  onClose: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <Modal open onClose={onClose} title={ex.name}>
+      <div className="space-y-4">
+        {ex.bodyPart && <Badge color="blue">{ex.bodyPart}</Badge>}
+        <ExerciseImageGallery exercise={ex} />
+        {ex.reps && (
+          <div className="text-sm">
+            <p className="font-medium text-gray-700">횟수</p>
+            <p className="text-indigo-700 font-medium">{ex.reps}</p>
+          </div>
+        )}
+        {ex.instructions && (
+          <div className="text-sm">
+            <p className="font-medium text-gray-700">방법</p>
+            <p className="text-gray-600 whitespace-pre-line">{ex.instructions}</p>
+          </div>
+        )}
+        {ex.cautions && (
+          <div className="text-sm">
+            <p className="font-medium text-red-700">⚠ 주의사항</p>
+            <p className="text-red-600 whitespace-pre-line">{ex.cautions}</p>
+          </div>
+        )}
+        {isAdmin && (
+          <div className="flex gap-2 pt-3 border-t">
+            <Button variant="secondary" onClick={onEdit} className="flex-1">
+              수정
+            </Button>
+            <Button variant="danger" onClick={onDelete} className="flex-1">
+              삭제
+            </Button>
+          </div>
+        )}
+      </div>
+    </Modal>
   );
 }
 
