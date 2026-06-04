@@ -116,7 +116,7 @@ export function ExercisesPage() {
                   ({grouped[key].length})
                 </span>
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
                 {grouped[key].map((ex) => (
                   <ExerciseTile
                     key={ex.id}
@@ -184,9 +184,9 @@ function ExerciseTile({
     <button
       type="button"
       onClick={onClick}
-      className="text-left bg-white rounded-lg border hover:shadow-md hover:border-indigo-300 transition overflow-hidden flex flex-col"
+      className="flex-shrink-0 w-24 sm:w-28 snap-start text-left bg-white rounded-lg border hover:shadow-md hover:border-indigo-300 transition overflow-hidden flex flex-col"
     >
-      <div className="aspect-square bg-gray-50 flex items-center justify-center text-3xl text-gray-300">
+      <div className="aspect-square bg-gray-50 flex items-center justify-center text-2xl text-gray-300">
         {firstImage ? (
           <img
             src={firstImage}
@@ -197,11 +197,8 @@ function ExerciseTile({
           '🏋️'
         )}
       </div>
-      <div className="px-2 py-1.5">
-        <div className="text-sm font-medium truncate">{ex.name}</div>
-        {ex.bodyPart && (
-          <div className="text-xs text-gray-500">{ex.bodyPart}</div>
-        )}
+      <div className="px-1.5 py-1">
+        <div className="text-xs font-medium truncate">{ex.name}</div>
       </div>
     </button>
   );
