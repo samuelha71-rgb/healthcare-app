@@ -50,25 +50,7 @@ export function RoutineCard({
         )}
 
         {r.exercises.length > 0 && (
-          <ul className="text-xs space-y-0.5 text-gray-700">
-            {r.exercises.map((ex) => (
-              <li key={ex.id}>
-                {ex.weekdays && ex.weekdays.length > 0 && (
-                  <span className="text-indigo-500 font-medium">
-                    {ex.weekdays
-                      .slice()
-                      .sort((a, b) => a - b)
-                      .map((w) => WEEKDAY_LABELS[w])
-                      .join('·')}{' '}
-                  </span>
-                )}
-                {ex.exercise?.bodyPart && (
-                  <span className="text-gray-400">[{ex.exercise.bodyPart}] </span>
-                )}
-                <span>{ex.exerciseName}</span>
-              </li>
-            ))}
-          </ul>
+          <CompactExerciseList exercises={r.exercises} />
         )}
 
         <p className="text-xs text-indigo-500 mt-auto pt-1">
@@ -215,6 +197,82 @@ export function RoutineDetailModal({
         )}
       </div>
     </Modal>
+  );
+}
+
+// 카드 미리보기용 — 같은 요일끼리 묶어서 보여줌 (등록 순서 무관)
+function CompactExerciseList({
+  exercises,
+}: {
+  exercises: Routine['exercises'];
+}) {
+  // 운동이 가진 모든 요일 수집 (중복 제외, 순서 유지)
+  const hasWeekdays = exercises.some((e) => e.weekdays && e.weekdays.length > 0);
+  if (!hasWeekdays) {
+    return (
+      <ul className="text-xs space-y-0.5 text-gray-700">
+        {exercises.map((ex) => (
+          <li key={ex.id}>
+            {ex.exercise?.bodyPart && (
+              <span className="text-gray-400">[{ex.exercise.bodyPart}] </span>
+            )}
+            <span>{ex.exerciseName}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  // 요일별 묶기 — 요일 미지정 운동은 "공통"
+  const byDay: Record<number, typeof exercises> = {};
+  const common: typeof exercises = [];
+  for (const ex of exercises) {
+    if (!ex.weekdays || ex.weekdays.length === 0) {
+      common.push(ex);
+    } else {
+      for (const w of ex.weekdays) {
+        (byDay[w] ??= []).push(ex);
+      }
+    }
+  }
+
+  return (
+    <div className="text-xs space-y-1 text-gray-700">
+      {WEEKDAY_LABELS.map((label, i) => {
+        const list = byDay[i];
+        if (!list || list.length === 0) return null;
+        return (
+          <div key={i}>
+            <div className="text-indigo-500 font-medium">{label}</div>
+            <ul className="pl-2 space-y-0.5">
+              {list.map((ex) => (
+                <li key={ex.id}>
+                  {ex.exercise?.bodyPart && (
+                    <span className="text-gray-400">[{ex.exercise.bodyPart}] </span>
+                  )}
+                  <span>{ex.exerciseName}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+      {common.length > 0 && (
+        <div>
+          <div className="text-gray-500 font-medium">공통</div>
+          <ul className="pl-2 space-y-0.5">
+            {common.map((ex) => (
+              <li key={ex.id}>
+                {ex.exercise?.bodyPart && (
+                  <span className="text-gray-400">[{ex.exercise.bodyPart}] </span>
+                )}
+                <span>{ex.exerciseName}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
 
