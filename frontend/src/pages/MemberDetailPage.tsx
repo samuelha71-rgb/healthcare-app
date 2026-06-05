@@ -247,13 +247,11 @@ function RoutinesByWeekday({
           return (
             <div key={i}>
               <div className="font-semibold text-indigo-700 mb-2">{label}요일</div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 anim-stagger">
+              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x anim-stagger">
                 {list.map((a) => (
-                  <RoutineCard
-                    key={a.routine.id}
-                    routine={a.routine}
-                    showAssignments={false}
-                  />
+                  <div key={a.routine.id} className="flex-shrink-0 w-72 snap-start">
+                    <RoutineCard routine={a.routine} showAssignments={false} />
+                  </div>
                 ))}
               </div>
             </div>
@@ -262,7 +260,7 @@ function RoutinesByWeekday({
         {noDay.length > 0 && (
           <div>
             <div className="font-semibold text-emerald-700 mb-2">⭐ 기본 (요일 무관)</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 anim-stagger">
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x anim-stagger">
               {noDay.map((a) => (
                 <RoutineCard
                   key={a.routine.id}
