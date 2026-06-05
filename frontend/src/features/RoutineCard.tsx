@@ -238,6 +238,22 @@ function CompactExerciseList({
 
   return (
     <div className="text-xs space-y-1 text-gray-700">
+      {/* 기본 — 모든 요일 공통 운동 (요일 위에 표시) */}
+      {common.length > 0 && (
+        <div>
+          <div className="text-emerald-700 font-medium">⭐ 기본</div>
+          <ul className="pl-2 space-y-0.5">
+            {common.map((ex) => (
+              <li key={ex.id}>
+                {ex.exercise?.bodyPart && (
+                  <span className="text-gray-400">[{ex.exercise.bodyPart}] </span>
+                )}
+                <span>{ex.exerciseName}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {WEEKDAY_LABELS.map((label, i) => {
         const list = byDay[i];
         if (!list || list.length === 0) return null;
@@ -257,21 +273,6 @@ function CompactExerciseList({
           </div>
         );
       })}
-      {common.length > 0 && (
-        <div>
-          <div className="text-gray-500 font-medium">공통</div>
-          <ul className="pl-2 space-y-0.5">
-            {common.map((ex) => (
-              <li key={ex.id}>
-                {ex.exercise?.bodyPart && (
-                  <span className="text-gray-400">[{ex.exercise.bodyPart}] </span>
-                )}
-                <span>{ex.exerciseName}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }
@@ -296,6 +297,17 @@ function ExercisesByWeekday({ routine: r }: { routine: Routine }) {
   }
   return (
     <div className="space-y-5">
+      {/* 기본 — 모든 요일 공통 운동 (요일 위에 먼저) */}
+      {allDays.length > 0 && (
+        <div>
+          <div className="font-semibold text-emerald-700 mb-2">⭐ 기본 (매일 공통)</div>
+          <div className="space-y-3 pl-2 border-l-2 border-emerald-200">
+            {allDays.map((ex) => (
+              <ExerciseDetail key={ex.id} ex={ex} />
+            ))}
+          </div>
+        </div>
+      )}
       {WEEKDAY_LABELS.map((label, i) => {
         const list = byDay[i];
         if (!list || list.length === 0) return null;
@@ -310,16 +322,6 @@ function ExercisesByWeekday({ routine: r }: { routine: Routine }) {
           </div>
         );
       })}
-      {allDays.length > 0 && (
-        <div>
-          <div className="font-semibold text-gray-600 mb-2">매일 (요일 지정 없음)</div>
-          <div className="space-y-3 pl-2 border-l-2 border-gray-200">
-            {allDays.map((ex) => (
-              <ExerciseDetail key={ex.id} ex={ex} />
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

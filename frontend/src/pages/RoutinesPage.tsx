@@ -334,10 +334,12 @@ function RoutineFormModal({
                     </Button>
                   </div>
 
-                  {/* 이 운동을 할 요일 — 비우면 루틴의 모든 요일에 적용 */}
+                  {/* 이 운동을 할 요일 — 비우면 "기본"으로 매일 적용 */}
                   <div>
                     <p className="text-xs text-gray-500 mb-1">
-                      요일 (비우면 루틴 요일 전체)
+                      요일 (비우면{' '}
+                      <span className="text-emerald-700 font-medium">⭐ 기본</span>
+                      으로 모든 요일에 적용)
                     </p>
                     <div className="flex flex-wrap gap-1">
                       {WEEKDAY_LABELS.map((w, di) => {
