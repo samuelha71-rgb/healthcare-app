@@ -210,10 +210,12 @@ function RoutinesByWeekday({
     return (
       <Card>
         <h2 className="font-semibold mb-2">내 루틴</h2>
-        <EmptyState
-          title="아직 배정된 루틴이 없습니다"
-          description="관리자가 루틴을 배정하면 여기에 요일별로 표시됩니다."
-        />
+        <div className="anim-fade-in">
+          <EmptyState
+            title="아직 배정된 루틴이 없습니다"
+            description="관리자가 루틴을 배정하면 여기에 요일별로 표시됩니다."
+          />
+        </div>
       </Card>
     );
   }
@@ -238,14 +240,14 @@ function RoutinesByWeekday({
       <p className="text-xs text-gray-500 mb-3">
         카드를 클릭하면 운동 방법·주의사항·이미지를 자세히 볼 수 있어요.
       </p>
-      <div className="space-y-4">
+      <div className="space-y-4 anim-fade-in">
         {WEEKDAY_LABELS.map((label, i) => {
           const list = byDay[i];
           if (!list || list.length === 0) return null;
           return (
             <div key={i}>
               <div className="font-semibold text-indigo-700 mb-2">{label}요일</div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 anim-stagger">
                 {list.map((a) => (
                   <RoutineCard
                     key={a.routine.id}
@@ -259,8 +261,8 @@ function RoutinesByWeekday({
         })}
         {noDay.length > 0 && (
           <div>
-            <div className="font-semibold text-gray-600 mb-2">요일 무관</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="font-semibold text-emerald-700 mb-2">⭐ 기본 (요일 무관)</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 anim-stagger">
               {noDay.map((a) => (
                 <RoutineCard
                   key={a.routine.id}

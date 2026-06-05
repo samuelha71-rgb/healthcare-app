@@ -115,11 +115,11 @@ export function Modal({
   }[size];
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 anim-backdrop-in"
       onClick={onClose}
     >
       <div
-        className={`bg-white rounded-xl w-full ${sizeClass} shadow-lg max-h-[90vh] overflow-y-auto`}
+        className={`bg-white rounded-xl w-full ${sizeClass} shadow-lg max-h-[90vh] overflow-y-auto anim-modal-pop`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="border-b px-5 py-3 flex items-center justify-between">
