@@ -13,6 +13,8 @@ export interface LogInput {
     setNumber: number;
     weight?: number | null;
     reps?: number | null;
+    durationMin?: number | null;
+    customText?: string | null;
   }>;
 }
 

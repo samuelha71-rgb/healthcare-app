@@ -116,41 +116,65 @@ export function LogDetailModal({
           <p className="text-sm text-gray-500">기록된 세트가 없습니다.</p>
         ) : (
           <div className="space-y-3">
-            {byExercise.map((ex) => (
+            {byExercise.map((ex) => {
+              // 유산소 여부 — 세트에 시간/메모가 있고 무게/횟수가 없으면 cardio로 판단
+              const isCardio = ex.sets.some(
+                (s) => (s.durationMin != null || s.customText) && s.weight == null && s.reps == null,
+              );
+              return (
               <div key={ex.name} className="border rounded-lg p-3 bg-white">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold">{ex.name}</h3>
                   <span className="text-xs text-gray-500">
-                    {ex.sets.length}세트
-                    {ex.totalVolume > 0 && ` · 볼륨 ${ex.totalVolume.toLocaleString()}kg`}
+                    {ex.sets.length}{isCardio ? '회차' : '세트'}
+                    {!isCardio && ex.totalVolume > 0 && ` · 볼륨 ${ex.totalVolume.toLocaleString()}kg`}
                   </span>
                 </div>
                 <table className="w-full text-sm mt-2">
                   <thead>
                     <tr className="text-left text-xs text-gray-500 border-b">
-                      <th className="py-1.5 w-12">세트</th>
-                      <th className="py-1.5">횟수</th>
-                      <th className="py-1.5">무게(kg)</th>
-                      <th className="py-1.5">볼륨</th>
+                      <th className="py-1.5 w-12">{isCardio ? '회차' : '세트'}</th>
+                      {isCardio ? (
+                        <>
+                          <th className="py-1.5">시간(분)</th>
+                          <th className="py-1.5">메모</th>
+                        </>
+                      ) : (
+                        <>
+                          <th className="py-1.5">횟수</th>
+                          <th className="py-1.5">무게(kg)</th>
+                          <th className="py-1.5">볼륨</th>
+                        </>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
                     {ex.sets.map((s) => (
                       <tr key={s.id} className="border-b last:border-0">
                         <td className="py-1.5 font-medium">{s.setNumber}</td>
-                        <td className="py-1.5">{s.reps ?? '-'}</td>
-                        <td className="py-1.5">{s.weight ?? '-'}</td>
-                        <td className="py-1.5 text-gray-500">
-                          {s.reps != null && s.weight != null
-                            ? `${(s.reps * s.weight).toLocaleString()}kg`
-                            : '-'}
-                        </td>
+                        {isCardio ? (
+                          <>
+                            <td className="py-1.5">{s.durationMin ?? '-'}</td>
+                            <td className="py-1.5 text-gray-600">{s.customText ?? '-'}</td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="py-1.5">{s.reps ?? '-'}</td>
+                            <td className="py-1.5">{s.weight ?? '-'}</td>
+                            <td className="py-1.5 text-gray-500">
+                              {s.reps != null && s.weight != null
+                                ? `${(s.reps * s.weight).toLocaleString()}kg`
+                                : '-'}
+                            </td>
+                          </>
+                        )}
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

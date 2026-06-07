@@ -140,6 +140,8 @@ export interface ExerciseSet {
   setNumber: number;
   weight?: number | null;
   reps?: number | null;
+  durationMin?: number | null;
+  customText?: string | null;
 }
 
 export interface WorkoutLog {

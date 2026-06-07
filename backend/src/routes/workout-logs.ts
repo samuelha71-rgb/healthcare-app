@@ -12,6 +12,8 @@ const setInput = z.object({
   setNumber: z.number().int().positive(),
   weight: z.number().nonnegative().optional().nullable(),
   reps: z.number().int().nonnegative().optional().nullable(),
+  durationMin: z.number().nonnegative().optional().nullable(),
+  customText: z.string().optional().nullable(),
 });
 
 const logInput = z.object({

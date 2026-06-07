@@ -254,51 +254,87 @@ export function DailyLogPage() {
                   </button>
                 </div>
                 <div className="space-y-1.5">
-                  {g.items.map(({ idx, set }, i) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm">
-                      <span className="w-12 shrink-0 text-gray-600 font-medium">
-                        세트 {i + 1}
-                      </span>
-                      <Input
-                        type="number"
-                        step="0.5"
-                        placeholder="무게(kg)"
-                        value={set.weight ?? ''}
-                        onChange={(e) =>
-                          updateSet(idx, {
-                            weight: e.target.value ? Number(e.target.value) : null,
-                          })
-                        }
-                      />
-                      <span className="text-gray-400">×</span>
-                      <Input
-                        type="number"
-                        placeholder="횟수"
-                        value={set.reps ?? ''}
-                        onChange={(e) =>
-                          updateSet(idx, {
-                            reps: e.target.value ? Number(e.target.value) : null,
-                          })
-                        }
-                      />
-                      <span className="text-gray-500 text-xs shrink-0">회</span>
-                      <button
-                        type="button"
-                        onClick={() => setSets(sets.filter((_, k) => k !== idx))}
-                        className="text-gray-400 hover:text-red-600 px-1"
-                        title="이 세트 삭제"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+                  {g.items.map(({ idx, set }, i) => {
+                    const lib = library.find((l) => l.name === g.name);
+                    const isCardio = lib?.bodyPart === '유산소';
+                    return (
+                      <div key={idx} className="flex items-center gap-2 text-sm flex-wrap">
+                        <span className="w-12 shrink-0 text-gray-600 font-medium">
+                          {isCardio ? '회차 ' : '세트 '}
+                          {i + 1}
+                        </span>
+                        {isCardio ? (
+                          <>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              placeholder="시간(분)"
+                              value={set.durationMin ?? ''}
+                              onChange={(e) =>
+                                updateSet(idx, {
+                                  durationMin: e.target.value ? Number(e.target.value) : null,
+                                })
+                              }
+                            />
+                            <span className="text-gray-500 text-xs shrink-0">분</span>
+                            <Input
+                              className="flex-1 min-w-[140px]"
+                              placeholder="예: 5km / 페이스 6분 / 평균 145bpm"
+                              value={set.customText ?? ''}
+                              onChange={(e) =>
+                                updateSet(idx, { customText: e.target.value })
+                              }
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              placeholder="무게(kg)"
+                              value={set.weight ?? ''}
+                              onChange={(e) =>
+                                updateSet(idx, {
+                                  weight: e.target.value ? Number(e.target.value) : null,
+                                })
+                              }
+                            />
+                            <span className="text-gray-400">×</span>
+                            <Input
+                              type="number"
+                              placeholder="횟수"
+                              value={set.reps ?? ''}
+                              onChange={(e) =>
+                                updateSet(idx, {
+                                  reps: e.target.value ? Number(e.target.value) : null,
+                                })
+                              }
+                            />
+                            <span className="text-gray-500 text-xs shrink-0">회</span>
+                          </>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setSets(sets.filter((_, k) => k !== idx))}
+                          className="text-gray-400 hover:text-red-600 px-1"
+                          title="이 세트 삭제"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
                 <Button
                   variant="ghost"
                   onClick={() => addSetTo(g.name)}
                   className="mt-2 !text-xs"
                 >
-                  + 세트 추가
+                  +{' '}
+                  {library.find((l) => l.name === g.name)?.bodyPart === '유산소'
+                    ? '회차'
+                    : '세트'}{' '}
+                  추가
                 </Button>
               </div>
             ))}

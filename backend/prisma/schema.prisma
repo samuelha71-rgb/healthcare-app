@@ -134,6 +134,8 @@ model ExerciseSet {
   setNumber     Int
   weight        Float?
   reps          Int?
+  durationMin   Float?  // 유산소 — 시간(분)
+  customText    String? // 유산소 — 자유 메모 (거리/심박/속도 등)
 
   workoutLog    WorkoutLog @relation(fields: [workoutLogId], references: [id], onDelete: Cascade)
 }
