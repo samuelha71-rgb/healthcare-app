@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { membersApi } from '@/api/members';
 import { workoutLogsApi, type LogInput } from '@/api/workout-logs';
@@ -36,7 +36,49 @@ export function DailyLogPage() {
   const [rpe, setRpe] = useState<number | ''>('');
   const [painArea, setPainArea] = useState('');
   const [note, setNote] = useState('');
-  const [sets, setSets] = useState<NonNullable<LogInput['sets']>>([]);
+
+  // 한 줄에 운동 하나 — 세트/횟수/무게를 한꺼번에 입력
+  interface ExerciseEntry {
+    exerciseName: string;
+    setCount: number | '';
+    reps: number | '';
+    weight: number | '';
+    durationMin: number | ''; // 유산소
+    customText: string; // 유산소 메모
+  }
+  const [entries, setEntries] = useState<ExerciseEntry[]>([]);
+
+  const isCardioName = (name: string) =>
+    library.find((l) => l.name === name)?.bodyPart === '유산소';
+
+  // 입력된 운동을 저장용 sets[]로 펼치기
+  const expandToSets = (): NonNullable<LogInput['sets']> => {
+    const out: NonNullable<LogInput['sets']> = [];
+    for (const e of entries) {
+      if (!e.exerciseName.trim()) continue;
+      if (isCardioName(e.exerciseName)) {
+        out.push({
+          exerciseName: e.exerciseName.trim(),
+          setNumber: 1,
+          weight: null,
+          reps: null,
+          durationMin: e.durationMin === '' ? null : Number(e.durationMin),
+          customText: e.customText || null,
+        });
+      } else {
+        const count = e.setCount === '' ? 1 : Number(e.setCount);
+        for (let i = 1; i <= count; i++) {
+          out.push({
+            exerciseName: e.exerciseName.trim(),
+            setNumber: i,
+            weight: e.weight === '' ? null : Number(e.weight),
+            reps: e.reps === '' ? null : Number(e.reps),
+          });
+        }
+      }
+    }
+    return out;
+  };
 
   const create = useMutation({
     mutationFn: () => {
@@ -48,13 +90,13 @@ export function DailyLogPage() {
         rpe: rpe === '' ? null : Number(rpe),
         painArea: painArea || null,
         note: note || null,
-        sets,
+        sets: expandToSets(),
       });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workout-logs'] });
       // 폼 초기화
-      setSets([]);
+      setEntries([]);
       setNote('');
       setPainArea('');
       setCondition('');
@@ -63,65 +105,42 @@ export function DailyLogPage() {
     },
   });
 
-  // 선택된 대상에게 배정된 루틴 → 해당 운동 자동 채워주기
+  // 루틴 자동 채우기 — 한 운동당 한 줄
   const fillFromRoutine = (routineId: number) => {
     const r = routines.find((rt) => rt.id === routineId);
     if (!r) return;
-    const newSets: NonNullable<LogInput['sets']> = [];
-    r.exercises.forEach((ex) => {
-      const cnt = ex.targetSets ?? 3;
-      for (let i = 1; i <= cnt; i++) {
-        newSets.push({
-          exerciseName: ex.exerciseName,
-          setNumber: i,
-          weight: ex.targetWeight ?? null,
-          reps: ex.targetReps ?? null,
-        });
-      }
-    });
-    setSets(newSets);
+    const newEntries: ExerciseEntry[] = r.exercises.map((ex) => ({
+      exerciseName: ex.exerciseName,
+      setCount: ex.targetSets ?? '',
+      reps: ex.targetReps ?? '',
+      weight: ex.targetWeight ?? '',
+      durationMin: '',
+      customText: '',
+    }));
+    setEntries(newEntries);
   };
 
-  const updateSet = (idx: number, patch: Partial<NonNullable<LogInput['sets']>[number]>) => {
-    setSets((curr) => curr.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
+  const updateEntry = (idx: number, patch: Partial<ExerciseEntry>) => {
+    setEntries((curr) => curr.map((e, i) => (i === idx ? { ...e, ...patch } : e)));
   };
-
-  // 운동별로 묶고 원본 index 추적 (업데이트/삭제에 사용)
-  const grouped = useMemo(() => {
-    const order: string[] = [];
-    const map: Record<string, { idx: number; set: (typeof sets)[number] }[]> = {};
-    sets.forEach((s, idx) => {
-      const key = s.exerciseName || '(이름 없음)';
-      if (!(key in map)) {
-        map[key] = [];
-        order.push(key);
-      }
-      map[key].push({ idx, set: s });
-    });
-    return order.map((name) => ({ name, items: map[name] }));
-  }, [sets]);
 
   const addExercise = (name: string) => {
     if (!name.trim()) return;
-    setSets((curr) => [
+    setEntries((curr) => [
       ...curr,
-      { exerciseName: name.trim(), setNumber: 1, weight: null, reps: null },
+      {
+        exerciseName: name.trim(),
+        setCount: '',
+        reps: '',
+        weight: '',
+        durationMin: '',
+        customText: '',
+      },
     ]);
   };
 
-  const addSetTo = (exerciseName: string) => {
-    setSets((curr) => {
-      const existingForExercise = curr.filter((s) => s.exerciseName === exerciseName);
-      const nextSetNumber = existingForExercise.length + 1;
-      return [
-        ...curr,
-        { exerciseName, setNumber: nextSetNumber, weight: null, reps: null },
-      ];
-    });
-  };
-
-  const removeExercise = (exerciseName: string) => {
-    setSets((curr) => curr.filter((s) => s.exerciseName !== exerciseName));
+  const removeEntry = (idx: number) => {
+    setEntries((curr) => curr.filter((_, i) => i !== idx));
   };
 
   return (
@@ -226,118 +245,113 @@ export function DailyLogPage() {
 
       <Card>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold">세트 기록</h2>
+          <h2 className="font-semibold">운동 기록</h2>
         </div>
 
         {/* 운동 추가 — 라이브러리 select 또는 직접 입력 */}
         <ExerciseAdder library={library} onAdd={addExercise} />
 
-        {grouped.length === 0 ? (
+        {entries.length === 0 ? (
           <p className="text-sm text-gray-500 text-center py-4">
             위 "루틴 불러오기"로 자동 채우거나, 위에서 운동을 하나씩 추가하세요.
           </p>
         ) : (
-          <div className="space-y-4 mt-4 anim-fade-in">
-            {grouped.map((g) => (
-              <div
-                key={g.name}
-                className="border rounded-lg p-3 bg-gray-50/50"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-indigo-700">{g.name}</h3>
+          <div className="space-y-2 mt-4 anim-fade-in">
+            {/* 테이블 헤더 */}
+            <div className="hidden sm:grid grid-cols-12 gap-2 text-xs text-gray-500 px-2">
+              <div className="col-span-4">운동</div>
+              <div className="col-span-2 text-center">세트</div>
+              <div className="col-span-2 text-center">횟수</div>
+              <div className="col-span-3 text-center">무게(kg)</div>
+              <div className="col-span-1"></div>
+            </div>
+            {entries.map((entry, idx) => {
+              const cardio = isCardioName(entry.exerciseName);
+              return (
+                <div
+                  key={idx}
+                  className="grid grid-cols-12 gap-2 items-center border rounded-lg p-2 bg-gray-50/30"
+                >
+                  <Input
+                    className="col-span-12 sm:col-span-4"
+                    placeholder="운동 이름"
+                    value={entry.exerciseName}
+                    onChange={(e) =>
+                      updateEntry(idx, { exerciseName: e.target.value })
+                    }
+                  />
+                  {cardio ? (
+                    <>
+                      <Input
+                        className="col-span-6 sm:col-span-3"
+                        type="number"
+                        step="0.5"
+                        placeholder="시간(분)"
+                        value={entry.durationMin}
+                        onChange={(e) =>
+                          updateEntry(idx, {
+                            durationMin: e.target.value ? Number(e.target.value) : '',
+                          })
+                        }
+                      />
+                      <Input
+                        className="col-span-5 sm:col-span-4"
+                        placeholder="메모: 5km, 페이스 6분 등"
+                        value={entry.customText}
+                        onChange={(e) =>
+                          updateEntry(idx, { customText: e.target.value })
+                        }
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <Input
+                        className="col-span-4 sm:col-span-2"
+                        type="number"
+                        placeholder="세트"
+                        value={entry.setCount}
+                        onChange={(e) =>
+                          updateEntry(idx, {
+                            setCount: e.target.value ? Number(e.target.value) : '',
+                          })
+                        }
+                      />
+                      <Input
+                        className="col-span-4 sm:col-span-2"
+                        type="number"
+                        placeholder="횟수"
+                        value={entry.reps}
+                        onChange={(e) =>
+                          updateEntry(idx, {
+                            reps: e.target.value ? Number(e.target.value) : '',
+                          })
+                        }
+                      />
+                      <Input
+                        className="col-span-3 sm:col-span-3"
+                        type="number"
+                        step="0.5"
+                        placeholder="무게"
+                        value={entry.weight}
+                        onChange={(e) =>
+                          updateEntry(idx, {
+                            weight: e.target.value ? Number(e.target.value) : '',
+                          })
+                        }
+                      />
+                    </>
+                  )}
                   <button
                     type="button"
-                    onClick={() => removeExercise(g.name)}
-                    className="text-xs text-gray-400 hover:text-red-600"
+                    onClick={() => removeEntry(idx)}
+                    className="col-span-1 text-gray-400 hover:text-red-600 text-center"
+                    title="삭제"
                   >
-                    운동 삭제
+                    ×
                   </button>
                 </div>
-                <div className="space-y-1.5">
-                  {g.items.map(({ idx, set }, i) => {
-                    const lib = library.find((l) => l.name === g.name);
-                    const isCardio = lib?.bodyPart === '유산소';
-                    return (
-                      <div key={idx} className="flex items-center gap-2 text-sm flex-wrap">
-                        <span className="w-12 shrink-0 text-gray-600 font-medium">
-                          {isCardio ? '회차 ' : '세트 '}
-                          {i + 1}
-                        </span>
-                        {isCardio ? (
-                          <>
-                            <Input
-                              type="number"
-                              step="0.5"
-                              placeholder="시간(분)"
-                              value={set.durationMin ?? ''}
-                              onChange={(e) =>
-                                updateSet(idx, {
-                                  durationMin: e.target.value ? Number(e.target.value) : null,
-                                })
-                              }
-                            />
-                            <span className="text-gray-500 text-xs shrink-0">분</span>
-                            <Input
-                              className="flex-1 min-w-[140px]"
-                              placeholder="예: 5km / 페이스 6분 / 평균 145bpm"
-                              value={set.customText ?? ''}
-                              onChange={(e) =>
-                                updateSet(idx, { customText: e.target.value })
-                              }
-                            />
-                          </>
-                        ) : (
-                          <>
-                            <Input
-                              type="number"
-                              step="0.5"
-                              placeholder="무게(kg)"
-                              value={set.weight ?? ''}
-                              onChange={(e) =>
-                                updateSet(idx, {
-                                  weight: e.target.value ? Number(e.target.value) : null,
-                                })
-                              }
-                            />
-                            <span className="text-gray-400">×</span>
-                            <Input
-                              type="number"
-                              placeholder="횟수"
-                              value={set.reps ?? ''}
-                              onChange={(e) =>
-                                updateSet(idx, {
-                                  reps: e.target.value ? Number(e.target.value) : null,
-                                })
-                              }
-                            />
-                            <span className="text-gray-500 text-xs shrink-0">회</span>
-                          </>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setSets(sets.filter((_, k) => k !== idx))}
-                          className="text-gray-400 hover:text-red-600 px-1"
-                          title="이 세트 삭제"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-                <Button
-                  variant="ghost"
-                  onClick={() => addSetTo(g.name)}
-                  className="mt-2 !text-xs"
-                >
-                  +{' '}
-                  {library.find((l) => l.name === g.name)?.bodyPart === '유산소'
-                    ? '회차'
-                    : '세트'}{' '}
-                  추가
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
