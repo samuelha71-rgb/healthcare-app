@@ -186,7 +186,9 @@ export function MemberDetailPage() {
         )}
       </Card>
 
-      <RoutinesByWeekday assignments={member.routineAssignments} />
+      {/* 학생 본인 화면에는 루틴 섹션 숨김 — "내 루틴" 메뉴에서 보면 됨.
+         관리자가 학생 상세 들어왔을 때는 그대로 보임. */}
+      {!isStudent && <RoutinesByWeekday assignments={member.routineAssignments} />}
 
       <SleepDietReport memberId={id} />
 
