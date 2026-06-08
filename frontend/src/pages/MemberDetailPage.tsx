@@ -5,14 +5,12 @@ import { membersApi } from '@/api/members';
 import { inbodyApi } from '@/api/inbody';
 import { workoutLogsApi } from '@/api/workout-logs';
 import { Badge, Button, Card, EmptyState } from '@/components/ui';
-import { WEEKDAY_LABELS } from '@/types';
 import { AttendanceCalendar } from '@/features/AttendanceCalendar';
 import { InbodyChart } from '@/features/InbodyChart';
 import { InbodyForm } from '@/features/InbodyForm';
 import { PhotosSection } from '@/features/PhotosSection';
 import { GoalsSection } from '@/features/GoalsSection';
 import { MemberComparison } from '@/features/MemberComparison';
-import { RoutineCard } from '@/features/RoutineCard';
 import { LogDetailModal } from '@/features/LogDetailModal';
 import { SleepDietReport } from '@/features/SleepDietReport';
 import { fmtDate } from '@/utils/format';
@@ -186,10 +184,6 @@ export function MemberDetailPage() {
         )}
       </Card>
 
-      {/* 학생 본인 화면에는 루틴 섹션 숨김 — "내 루틴" 메뉴에서 보면 됨.
-         관리자가 학생 상세 들어왔을 때는 그대로 보임. */}
-      {!isStudent && <RoutinesByWeekday assignments={member.routineAssignments} />}
-
       <SleepDietReport memberId={id} />
 
       <GoalsSection memberId={id} />
@@ -202,78 +196,3 @@ export function MemberDetailPage() {
   );
 }
 
-// 배정된 루틴을 요일별로 묶어 컴팩트 카드로 표시 — 카드 클릭 시 상세 모달
-function RoutinesByWeekday({
-  assignments,
-}: {
-  assignments: { routine: import('@/types').Routine }[];
-}) {
-  if (assignments.length === 0) {
-    return (
-      <Card>
-        <h2 className="font-semibold mb-2">내 루틴</h2>
-        <div className="anim-fade-in">
-          <EmptyState
-            title="아직 배정된 루틴이 없습니다"
-            description="관리자가 루틴을 배정하면 여기에 요일별로 표시됩니다."
-          />
-        </div>
-      </Card>
-    );
-  }
-
-  // 요일별 그룹화 — 한 루틴이 여러 요일에 걸치면 각각 표시
-  const byDay: Record<number, typeof assignments> = {};
-  const noDay: typeof assignments = [];
-  for (const a of assignments) {
-    const wds = a.routine.weekdays;
-    if (!wds || wds.length === 0) {
-      noDay.push(a);
-    } else {
-      for (const w of wds) {
-        (byDay[w] ??= []).push(a);
-      }
-    }
-  }
-
-  return (
-    <Card>
-      <h2 className="font-semibold mb-3">내 루틴 (요일별)</h2>
-      <p className="text-xs text-gray-500 mb-3">
-        카드를 클릭하면 운동 방법·주의사항·이미지를 자세히 볼 수 있어요.
-      </p>
-      <div className="space-y-4 anim-fade-in">
-        {WEEKDAY_LABELS.map((label, i) => {
-          const list = byDay[i];
-          if (!list || list.length === 0) return null;
-          return (
-            <div key={i}>
-              <div className="font-semibold text-indigo-700 mb-2">{label}요일</div>
-              <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x anim-stagger">
-                {list.map((a) => (
-                  <div key={a.routine.id} className="flex-shrink-0 w-72 snap-start">
-                    <RoutineCard routine={a.routine} showAssignments={false} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-        {noDay.length > 0 && (
-          <div>
-            <div className="font-semibold text-emerald-700 mb-2">⭐ 기본 (요일 무관)</div>
-            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x anim-stagger">
-              {noDay.map((a) => (
-                <RoutineCard
-                  key={a.routine.id}
-                  routine={a.routine}
-                  showAssignments={false}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </Card>
-  );
-}
