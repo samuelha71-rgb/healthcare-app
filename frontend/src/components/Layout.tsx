@@ -1,7 +1,8 @@
 // 페이지 공통 레이아웃 — 역할별로 메뉴 다름
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { useAuth } from '@/auth/AuthContext';
+import { PageErrorBoundary } from '@/components/PageErrorBoundary';
 
 const ADMIN_NAV = [
   { to: '/', label: '대시보드', end: true },
@@ -23,6 +24,7 @@ const STUDENT_NAV = [
 export function Layout() {
   const { user, logout } = useAuth();
   const nav = user?.role === 'admin' ? ADMIN_NAV : STUDENT_NAV;
+  const location = useLocation();
 
   return (
     <div className="min-h-screen flex">
@@ -64,7 +66,12 @@ export function Layout() {
         </button>
       </aside>
       <main className="flex-1 p-8 overflow-y-auto">
-        <Outlet />
+        {/* 경로가 바뀔 때마다 key가 바뀌어 페이드 인이 트리거됨 */}
+        <div key={location.pathname} className="anim-fade-in">
+          <PageErrorBoundary>
+            <Outlet />
+          </PageErrorBoundary>
+        </div>
       </main>
     </div>
   );
