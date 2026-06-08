@@ -44,7 +44,6 @@ export function LogDetailModal({
     }));
   }, [log.sets]);
 
-  const totalVolume = byExercise.reduce((s, e) => s + e.totalVolume, 0);
   const title = withMember
     ? `${member?.name ?? `#${log.memberId}`} — ${fmtDate(log.date)}`
     : fmtDate(log.date);
@@ -62,10 +61,6 @@ export function LogDetailModal({
             </Badge>
           )}
           {log.painArea && <Badge color="red">⚠ 통증: {log.painArea}</Badge>}
-          <Badge color="gray">{log.sets.length}세트</Badge>
-          {totalVolume > 0 && (
-            <Badge color="gray">총 볼륨 {totalVolume.toLocaleString()}kg</Badge>
-          )}
         </div>
 
         {log.note && (
@@ -115,64 +110,54 @@ export function LogDetailModal({
         {byExercise.length === 0 ? (
           <p className="text-sm text-gray-500">기록된 세트가 없습니다.</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {byExercise.map((ex) => {
-              // 유산소 여부 — 세트에 시간/메모가 있고 무게/횟수가 없으면 cardio로 판단
               const isCardio = ex.sets.some(
                 (s) => (s.durationMin != null || s.customText) && s.weight == null && s.reps == null,
               );
+
+              // 모든 세트가 동일한지 (입력한 그대로 한 줄 표시 위함)
+              const firstReps = ex.sets[0]?.reps;
+              const firstWeight = ex.sets[0]?.weight;
+              const allSame =
+                !isCardio &&
+                ex.sets.every((s) => s.reps === firstReps && s.weight === firstWeight);
+
               return (
-              <div key={ex.name} className="border rounded-lg p-3 bg-white">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">{ex.name}</h3>
-                  <span className="text-xs text-gray-500">
-                    {ex.sets.length}{isCardio ? '회차' : '세트'}
-                    {!isCardio && ex.totalVolume > 0 && ` · 볼륨 ${ex.totalVolume.toLocaleString()}kg`}
-                  </span>
+                <div
+                  key={ex.name}
+                  className="border rounded-lg px-3 py-2 bg-white flex items-center justify-between gap-3 flex-wrap"
+                >
+                  <span className="font-semibold">{ex.name}</span>
+                  {isCardio ? (
+                    <span className="text-sm text-gray-700">
+                      {ex.sets.map((s, i) => (
+                        <span key={s.id}>
+                          {i > 0 && <span className="text-gray-400"> · </span>}
+                          {s.durationMin != null && <>{s.durationMin}분</>}
+                          {s.customText && (
+                            <span className="text-gray-500"> {s.customText}</span>
+                          )}
+                        </span>
+                      ))}
+                    </span>
+                  ) : allSame ? (
+                    <span className="text-sm text-gray-700">
+                      {ex.sets.length}세트
+                      {firstReps != null && ` × ${firstReps}회`}
+                      {firstWeight != null && ` × ${firstWeight}kg`}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-gray-700">
+                      {ex.sets.map((s, i) => (
+                        <span key={s.id}>
+                          {i > 0 && <span className="text-gray-400"> · </span>}
+                          {s.reps ?? '-'}회{s.weight != null && ` × ${s.weight}kg`}
+                        </span>
+                      ))}
+                    </span>
+                  )}
                 </div>
-                <table className="w-full text-sm mt-2">
-                  <thead>
-                    <tr className="text-left text-xs text-gray-500 border-b">
-                      <th className="py-1.5 w-12">{isCardio ? '회차' : '세트'}</th>
-                      {isCardio ? (
-                        <>
-                          <th className="py-1.5">시간(분)</th>
-                          <th className="py-1.5">메모</th>
-                        </>
-                      ) : (
-                        <>
-                          <th className="py-1.5">횟수</th>
-                          <th className="py-1.5">무게(kg)</th>
-                          <th className="py-1.5">볼륨</th>
-                        </>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ex.sets.map((s) => (
-                      <tr key={s.id} className="border-b last:border-0">
-                        <td className="py-1.5 font-medium">{s.setNumber}</td>
-                        {isCardio ? (
-                          <>
-                            <td className="py-1.5">{s.durationMin ?? '-'}</td>
-                            <td className="py-1.5 text-gray-600">{s.customText ?? '-'}</td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="py-1.5">{s.reps ?? '-'}</td>
-                            <td className="py-1.5">{s.weight ?? '-'}</td>
-                            <td className="py-1.5 text-gray-500">
-                              {s.reps != null && s.weight != null
-                                ? `${(s.reps * s.weight).toLocaleString()}kg`
-                                : '-'}
-                            </td>
-                          </>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
               );
             })}
           </div>
