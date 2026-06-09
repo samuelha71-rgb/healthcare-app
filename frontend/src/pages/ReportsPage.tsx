@@ -2,7 +2,6 @@ import { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { membersApi } from '@/api/members';
 import { inbodyApi } from '@/api/inbody';
-import { workoutLogsApi } from '@/api/workout-logs';
 import { Button, Card, Label, Select } from '@/components/ui';
 import { InbodyChart } from '@/features/InbodyChart';
 import { AttendanceCalendar } from '@/features/AttendanceCalendar';
@@ -17,21 +16,24 @@ export function ReportsPage() {
   const [memberId, setMemberId] = useState<number | null>(null);
   const [backupWithPhotos, setBackupWithPhotos] = useState(false);
 
-  const { data: member } = useQuery({
+  const { data: member, isFetching: memberLoading } = useQuery({
     queryKey: ['members', memberId],
     queryFn: () => membersApi.get(memberId!),
     enabled: !!memberId,
   });
-  const { data: inbody = [] } = useQuery({
+  const { data: inbody = [], isFetching: inbodyLoading } = useQuery({
     queryKey: ['inbody', memberId],
     queryFn: () => inbodyApi.list(memberId!),
     enabled: !!memberId,
   });
-  const { data: logs = [] } = useQuery({
-    queryKey: ['workout-logs', memberId],
-    queryFn: () => workoutLogsApi.list({ memberId: memberId! }),
+  // 출석 캘린더에는 날짜만 필요 — 가벼운 attendance 엔드포인트 사용 (세트 데이터 제외)
+  const { data: attendance = [], isFetching: attLoading } = useQuery({
+    queryKey: ['attendance', memberId],
+    queryFn: () => membersApi.attendance(memberId!),
     enabled: !!memberId,
   });
+  const logsCount = member?.stats?.logCount ?? attendance.length;
+  const isLoading = memberLoading || inbodyLoading || attLoading;
 
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -112,12 +114,24 @@ export function ReportsPage() {
         </Select>
       </Card>
 
+      {memberId && !member && (
+        <Card className="anim-fade-in">
+          <div className="flex items-center gap-3 py-6 justify-center text-gray-500">
+            <div className="w-5 h-5 rounded-full border-2 border-indigo-300 border-t-indigo-600 animate-spin" />
+            <span className="text-sm">학생 데이터를 불러오는 중...</span>
+          </div>
+        </Card>
+      )}
+
       {memberId && member && (
-        <div ref={reportRef} className="space-y-6 print:space-y-4">
+        <div ref={reportRef} className="space-y-6 print:space-y-4 anim-fade-in">
           <Card>
             <h2 className="text-xl font-bold">{member.name} 헬스케어 리포트</h2>
             <p className="text-sm text-gray-500">
               시작일: {fmtDate(member.joinedAt)} · 발행: {fmtDate(new Date())}
+              {isLoading && (
+                <span className="ml-2 text-indigo-600">· 데이터 갱신 중...</span>
+              )}
             </p>
           </Card>
 
@@ -126,7 +140,7 @@ export function ReportsPage() {
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <p className="text-sm text-gray-500">총 운동 일수</p>
-                <p className="text-2xl font-bold">{logs.length}</p>
+                <p className="text-2xl font-bold">{logsCount}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">인바디 측정</p>
@@ -176,7 +190,7 @@ export function ReportsPage() {
 
           <Card>
             <h3 className="font-semibold mb-2">출석</h3>
-            <AttendanceCalendar dates={logs.map((l) => l.date)} />
+            <AttendanceCalendar dates={attendance.map((a) => a.date)} />
           </Card>
 
           <SleepDietReport memberId={memberId} />
