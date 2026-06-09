@@ -106,9 +106,18 @@ export function DailyLogPage() {
   });
 
   // 루틴 자동 채우기 — 한 운동당 한 줄
+  const [loadedRoutineName, setLoadedRoutineName] = useState<string | null>(null);
+
   const fillFromRoutine = (routineId: number) => {
     const r = routines.find((rt) => rt.id === routineId);
-    if (!r) return;
+    if (!r) {
+      alert('루틴을 찾을 수 없어요. 새로고침 후 다시 시도해주세요.');
+      return;
+    }
+    if (!r.exercises || r.exercises.length === 0) {
+      alert(`"${r.name}" 루틴에 등록된 운동이 없어요. 관리자에게 문의해주세요.`);
+      return;
+    }
     const newEntries: ExerciseEntry[] = r.exercises.map((ex) => ({
       exerciseName: ex.exerciseName,
       setCount: ex.targetSets ?? '',
@@ -118,6 +127,9 @@ export function DailyLogPage() {
       customText: '',
     }));
     setEntries(newEntries);
+    setLoadedRoutineName(r.name);
+    // 2초 후 알림 사라짐
+    setTimeout(() => setLoadedRoutineName((curr) => (curr === r.name ? null : curr)), 2500);
   };
 
   const updateEntry = (idx: number, patch: Partial<ExerciseEntry>) => {
@@ -194,21 +206,24 @@ export function DailyLogPage() {
           <div className="mt-3">
             <Label>루틴 불러오기 (선택)</Label>
             <Select
-              defaultValue=""
+              value=""
               onChange={(e) => {
-                if (e.target.value) {
-                  fillFromRoutine(Number(e.target.value));
-                  e.target.value = '';
-                }
+                const v = e.target.value;
+                if (v) fillFromRoutine(Number(v));
               }}
             >
               <option value="">루틴을 선택해 운동을 자동 채우기</option>
               {routines.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.name}
+                  {r.name} ({r.exercises?.length ?? 0}개 운동)
                 </option>
               ))}
             </Select>
+            {loadedRoutineName && (
+              <p className="text-xs text-emerald-600 mt-1 anim-fade-in">
+                ✓ "{loadedRoutineName}" 불러옴 — 아래 운동 목록을 확인하세요
+              </p>
+            )}
           </div>
         )}
       </Card>
