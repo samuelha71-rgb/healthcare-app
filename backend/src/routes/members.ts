@@ -61,9 +61,15 @@ membersRouter.get(
     });
     if (!member) throw new HttpError(404, 'Member not found');
 
+    // "운동 일수"는 실제 세트가 있는 기록만 카운트 (세트 없으면 운동 안 한 것으로 간주)
     const [logCount, lastLog, inbodyCount, photoCount] = await Promise.all([
-      prisma.workoutLog.count({ where: { memberId: id } }),
-      prisma.workoutLog.findFirst({ where: { memberId: id }, orderBy: { date: 'desc' } }),
+      prisma.workoutLog.count({
+        where: { memberId: id, sets: { some: {} } },
+      }),
+      prisma.workoutLog.findFirst({
+        where: { memberId: id, sets: { some: {} } },
+        orderBy: { date: 'desc' },
+      }),
       prisma.inbodyRecord.count({ where: { memberId: id } }),
       prisma.photo.count({ where: { memberId: id } }),
     ]);
@@ -128,8 +134,9 @@ membersRouter.get(
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
     ensureSelfOrAdmin(req, id);
+    // 출석 = 실제로 운동한 날(세트가 있는 날)만
     const logs = await prisma.workoutLog.findMany({
-      where: { memberId: id },
+      where: { memberId: id, sets: { some: {} } },
       select: { date: true, condition: true, rpe: true },
       orderBy: { date: 'asc' },
     });

@@ -15,7 +15,9 @@ statsRouter.get(
       select: { id: true, name: true },
       orderBy: { name: 'asc' },
     });
+    // 실제 운동한 날만 (세트가 있는 기록만) — 인바디나 빈 기록은 제외
     const logs = await prisma.workoutLog.findMany({
+      where: { sets: { some: {} } },
       select: { memberId: true, date: true, rpe: true },
     });
 

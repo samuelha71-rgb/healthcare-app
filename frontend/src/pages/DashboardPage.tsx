@@ -29,10 +29,13 @@ export function DashboardPage() {
     queryFn: () => inbodyApi.list(),
   });
 
+  // 실제 운동한 날(세트가 있는 기록)만 카운트
   const last7days = recentLogs.filter((l) => {
+    if (l.sets.length === 0) return false;
     const d = new Date(l.date).getTime();
     return Date.now() - d < 7 * 24 * 60 * 60 * 1000;
   });
+  const realWorkouts = recentLogs.filter((l) => l.sets.length > 0);
 
   const [openLog, setOpenLog] = useState<WorkoutLog | null>(null);
   const openMember = openLog && members.find((m) => m.id === openLog.memberId);
@@ -52,7 +55,7 @@ export function DashboardPage() {
         </Card>
         <Card>
           <p className="text-sm text-gray-500">최근 30일 누적 기록</p>
-          <p className="text-3xl font-bold mt-1">{recentLogs.length}</p>
+          <p className="text-3xl font-bold mt-1">{realWorkouts.length}</p>
         </Card>
       </div>
 
