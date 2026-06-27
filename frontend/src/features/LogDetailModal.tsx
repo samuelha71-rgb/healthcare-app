@@ -1,6 +1,7 @@
 // 운동 기록 상세 모달 — 관리자/학생 공용
 // 그날 작성한 모든 페이지를 한 화면에 (운동 + 수면 + 식단)
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Badge, Modal } from '@/components/ui';
 import { fmtDate } from '@/utils/format';
@@ -165,12 +166,12 @@ export function LogDetailModal({
 
         {withMember && member && (
           <div className="pt-3 border-t">
-            <a
-              href={`/members/${log.memberId}`}
+            <Link
+              to={`/members/${log.memberId}`}
               className="text-sm text-indigo-600 hover:underline"
             >
               {member.name} 상세 페이지로 이동 →
-            </a>
+            </Link>
           </div>
         )}
       </div>

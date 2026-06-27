@@ -27,12 +27,6 @@ export function MemberDetailPage() {
     enabled: !!id,
   });
 
-  const { data: attendance = [] } = useQuery({
-    queryKey: ['attendance', id],
-    queryFn: () => membersApi.attendance(id),
-    enabled: !!id,
-  });
-
   const { data: inbody = [] } = useQuery({
     queryKey: ['inbody', id],
     queryFn: () => inbodyApi.list(id),
@@ -54,12 +48,6 @@ export function MemberDetailPage() {
   const [openLog, setOpenLog] = useState<import('@/types').WorkoutLog | null>(null);
 
   if (!member) return <p>로딩 중...</p>;
-
-  // 참여도 — 최근 30일 출석률
-  const last30 = attendance.filter(
-    (a) => Date.now() - new Date(a.date).getTime() < 30 * 24 * 60 * 60 * 1000,
-  );
-  const attendanceRate = Math.round((last30.length / 30) * 100);
 
   return (
     <div className="space-y-6">
@@ -85,25 +73,6 @@ export function MemberDetailPage() {
       </div>
 
       {isStudent && <MemberComparison />}
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <p className="text-sm text-gray-500">전체 운동 일수</p>
-          <p className="text-2xl font-bold">{member.stats.logCount}</p>
-        </Card>
-        <Card>
-          <p className="text-sm text-gray-500">최근 30일 출석률</p>
-          <p className="text-2xl font-bold">{attendanceRate}%</p>
-        </Card>
-        <Card>
-          <p className="text-sm text-gray-500">인바디 측정</p>
-          <p className="text-2xl font-bold">{member.stats.inbodyCount}</p>
-        </Card>
-        <Card>
-          <p className="text-sm text-gray-500">사진 기록</p>
-          <p className="text-2xl font-bold">{member.stats.photoCount}</p>
-        </Card>
-      </div>
 
       <Card>
         <div className="flex items-center justify-between mb-3">
