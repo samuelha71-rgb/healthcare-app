@@ -9,6 +9,7 @@ import { MemberDetailPage } from './pages/MemberDetailPage';
 import { PinsPage } from './pages/PinsPage';
 import { RoutinesPage } from './pages/RoutinesPage';
 import { ExercisesPage } from './pages/ExercisesPage';
+import { RecordsPage } from './pages/RecordsPage';
 import { DailyLogPage } from './pages/DailyLogPage';
 import { ReportsPage } from './pages/ReportsPage';
 
@@ -38,6 +39,14 @@ function App() {
             element={
               <RequireAuth adminOnly>
                 <PinsPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/records"
+            element={
+              <RequireAuth adminOnly>
+                <RecordsPage />
               </RequireAuth>
             }
           />

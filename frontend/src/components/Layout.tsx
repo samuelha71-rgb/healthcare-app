@@ -6,6 +6,7 @@ import { PageErrorBoundary } from '@/components/PageErrorBoundary';
 
 const ADMIN_NAV = [
   { to: '/', label: '대시보드', end: true },
+  { to: '/records', label: '기록 관리' },
   { to: '/members', label: '대상' },
   { to: '/pins', label: 'PIN 관리' },
   { to: '/routines', label: '루틴' },
