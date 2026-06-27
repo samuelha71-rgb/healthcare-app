@@ -472,16 +472,22 @@ function ExerciseAdder({
       <div>
         <Label>직접 입력</Label>
         <Input
-          placeholder="운동 이름 입력 후 엔터"
+          placeholder="운동 이름"
           value={custom}
           onChange={(e) => setCustom(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && custom.trim()) {
-              onAdd(custom);
-              setCustom('');
-            }
-          }}
         />
+        <div className="mt-2 flex justify-end">
+          <Button
+            onClick={() => {
+              if (!custom.trim()) return;
+              onAdd(custom.trim());
+              setCustom('');
+            }}
+            disabled={!custom.trim()}
+          >
+            추가
+          </Button>
+        </div>
       </div>
     </div>
   );
