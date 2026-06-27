@@ -68,15 +68,14 @@ export function DailyLogPage() {
     enabled: !!memberId,
   });
 
+  // 대상/날짜가 바뀌면 기존 기록으로 폼 채움 (저장 후 invalidate로 자동 재채움 막기 위해 existing 의존성 제외)
   useEffect(() => {
     setSleepHours(existingSleep?.hours ? String(existingSleep.hours) : '');
-  }, [memberId, date, existingSleep?.id]);
-
-  useEffect(() => {
     setBreakfast(existingDiet?.breakfast ?? false);
     setLunch(existingDiet?.lunch ?? false);
     setDinner(existingDiet?.dinner ?? false);
-  }, [memberId, date, existingDiet?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memberId, date]);
 
   const isCardioName = (name: string) =>
     library.find((l) => l.name === name)?.bodyPart === '유산소';
@@ -162,7 +161,11 @@ export function DailyLogPage() {
       qc.invalidateQueries({ queryKey: ['sleep'] });
       qc.invalidateQueries({ queryKey: ['diet'] });
       qc.invalidateQueries({ queryKey: ['attendance'] });
-      // 운동 부분만 비우기 — 수면/식단은 저장된 상태 유지
+      // 모든 폼 비우기
+      setSleepHours('');
+      setBreakfast(false);
+      setLunch(false);
+      setDinner(false);
       setEntries([]);
       setCondition('');
       setRpe('');
