@@ -471,12 +471,13 @@ function ExerciseAdder({
       )}
       <div>
         <Label>직접 입력</Label>
-        <Input
-          placeholder="운동 이름"
-          value={custom}
-          onChange={(e) => setCustom(e.target.value)}
-        />
-        <div className="mt-2 flex justify-end">
+        <div className="flex gap-2">
+          <Input
+            placeholder="운동 이름"
+            value={custom}
+            onChange={(e) => setCustom(e.target.value)}
+            className="flex-1"
+          />
           <Button
             onClick={() => {
               if (!custom.trim()) return;
