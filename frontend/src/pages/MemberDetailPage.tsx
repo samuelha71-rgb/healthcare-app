@@ -176,7 +176,7 @@ export function MemberDetailPage() {
         )}
       </Card>
 
-      <SleepDietReport memberId={id} />
+      <SleepDietReport memberId={id} showDiet={false} />
 
       {openLog && (
         <LogDetailModal log={openLog} onClose={() => setOpenLog(null)} />

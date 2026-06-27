@@ -18,7 +18,13 @@ import { sleepApi } from '@/api/sleep';
 import { dietApi } from '@/api/diet';
 import { Card, EmptyState } from '@/components/ui';
 
-export function SleepDietReport({ memberId }: { memberId: number }) {
+export function SleepDietReport({
+  memberId,
+  showDiet = true,
+}: {
+  memberId: number;
+  showDiet?: boolean;
+}) {
   const { data: sleep = [] } = useQuery({
     queryKey: ['sleep', memberId],
     queryFn: () => sleepApi.list(memberId),
@@ -103,6 +109,7 @@ export function SleepDietReport({ memberId }: { memberId: number }) {
         )}
       </Card>
 
+      {showDiet && (
       <Card>
         <h3 className="font-semibold mb-3">식단 분석</h3>
         {diet.length === 0 ? (
@@ -179,6 +186,7 @@ export function SleepDietReport({ memberId }: { memberId: number }) {
           </div>
         )}
       </Card>
+      )}
     </>
   );
 }
