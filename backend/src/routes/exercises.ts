@@ -35,9 +35,21 @@ exercisesRouter.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const bodyPart = req.query.bodyPart ? String(req.query.bodyPart) : undefined;
+    const slim = req.query.slim === '1';
+    // slim=1 — 이미지 제외 (드롭다운/선택용). 기본은 이미지 포함 (운동 라이브러리 화면용)
     const exercises = await prisma.exercise.findMany({
       where: { ...(bodyPart && { bodyPart }) },
-      include: { images: { orderBy: { orderIndex: 'asc' } } },
+      include: slim ? undefined : { images: { orderBy: { orderIndex: 'asc' } } },
+      ...(slim && {
+        select: {
+          id: true,
+          name: true,
+          bodyPart: true,
+          reps: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
       orderBy: [{ bodyPart: 'asc' }, { name: 'asc' }],
     });
     res.json(exercises);

@@ -29,9 +29,10 @@ export function DailyLogPage() {
     queryFn: membersApi.list,
     enabled: !isStudent,
   });
+  // 드롭다운용 — 이름/부위만 (이미지 빼서 빠르게)
   const { data: library = [] } = useQuery({
-    queryKey: ['exercises'],
-    queryFn: () => exercisesApi.list(),
+    queryKey: ['exercises', 'slim'],
+    queryFn: () => exercisesApi.listSlim(),
   });
 
   // 대상 + 날짜 (전체 화면 공통)
