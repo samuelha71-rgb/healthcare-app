@@ -193,10 +193,13 @@ model DietLog {
   id        Int      @id @default(autoincrement())
   memberId  Int
   date      DateTime
+  breakfast Boolean  @default(false)
+  lunch     Boolean  @default(false)
+  dinner    Boolean  @default(false)
   note      String?
   createdAt DateTime @default(now())
 
-  items     DietItem[]
+  items     DietItem[] // (deprecated) 이전 식단 항목 — 새 UI에선 사용 안 함
   member    Member     @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@unique([memberId, date])

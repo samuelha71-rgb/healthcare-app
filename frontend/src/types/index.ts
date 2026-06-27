@@ -73,8 +73,11 @@ export interface DietLog {
   id: number;
   memberId: number;
   date: string;
+  breakfast?: boolean;
+  lunch?: boolean;
+  dinner?: boolean;
   note?: string | null;
-  items: DietItem[];
+  items: DietItem[]; // deprecated
 }
 
 // 음식명 빠른 입력용 추천 목록

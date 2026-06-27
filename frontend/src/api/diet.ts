@@ -4,8 +4,11 @@ import type { DietLog, DietItem } from '@/types';
 export interface DietInput {
   memberId: number;
   date: string;
+  breakfast?: boolean;
+  lunch?: boolean;
+  dinner?: boolean;
   note?: string | null;
-  items: DietItem[];
+  items?: DietItem[]; // 신규 UI는 안 보냄
 }
 
 export const dietApi = {

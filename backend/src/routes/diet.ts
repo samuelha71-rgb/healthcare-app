@@ -16,8 +16,12 @@ const itemInput = z.object({
 const dietInput = z.object({
   memberId: z.number().int(),
   date: z.string().transform((s) => new Date(s)),
+  breakfast: z.boolean().optional(),
+  lunch: z.boolean().optional(),
+  dinner: z.boolean().optional(),
   note: z.string().optional().nullable(),
-  items: z.array(itemInput),
+  // 신규 UI는 items 안 보냄 — 옵셔널로 허용
+  items: z.array(itemInput).optional(),
 });
 
 dietRouter.get(
@@ -60,22 +64,31 @@ dietRouter.post(
     const { items, ...data } = dietInput.parse(req.body);
     ensureSelfOrAdmin(req, data.memberId);
 
+    const updatable = {
+      breakfast: data.breakfast ?? false,
+      lunch: data.lunch ?? false,
+      dinner: data.dinner ?? false,
+      note: data.note ?? null,
+    };
     const log = await prisma.$transaction(async (tx) => {
       const upserted = await tx.dietLog.upsert({
         where: { memberId_date: { memberId: data.memberId, date: data.date } },
-        create: { ...data },
-        update: { note: data.note ?? null },
+        create: { memberId: data.memberId, date: data.date, ...updatable },
+        update: updatable,
       });
-      await tx.dietItem.deleteMany({ where: { dietLogId: upserted.id } });
-      if (items.length > 0) {
-        await tx.dietItem.createMany({
-          data: items.map((it, i) => ({
-            dietLogId: upserted.id,
-            foodName: it.foodName,
-            amount: it.amount,
-            orderIndex: it.orderIndex ?? i,
-          })),
-        });
+      // items 명시적으로 보낸 경우만 교체 (신규 UI는 안 보냄)
+      if (items) {
+        await tx.dietItem.deleteMany({ where: { dietLogId: upserted.id } });
+        if (items.length > 0) {
+          await tx.dietItem.createMany({
+            data: items.map((it, i) => ({
+              dietLogId: upserted.id,
+              foodName: it.foodName,
+              amount: it.amount,
+              orderIndex: it.orderIndex ?? i,
+            })),
+          });
+        }
       }
       return tx.dietLog.findUnique({
         where: { id: upserted.id },

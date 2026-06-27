@@ -1,13 +1,24 @@
-import { useState } from 'react';
+// 오늘 기록 — 수면 / 식단 / 운동 한 페이지, 한 번에 저장
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { membersApi } from '@/api/members';
 import { workoutLogsApi, type LogInput } from '@/api/workout-logs';
 import { routinesApi } from '@/api/routines';
 import { exercisesApi } from '@/api/exercises';
+import { sleepApi } from '@/api/sleep';
+import { dietApi } from '@/api/diet';
 import { Button, Card, Input, Label, Select, Textarea } from '@/components/ui';
 import { todayISO } from '@/utils/format';
 import { useAuth } from '@/auth/AuthContext';
-import { SleepDietSection } from '@/features/SleepDietSection';
+
+interface ExerciseEntry {
+  exerciseName: string;
+  setCount: number | '';
+  reps: number | '';
+  weight: number | '';
+  durationMin: number | '';
+  customText: string;
+}
 
 export function DailyLogPage() {
   const qc = useQueryClient();
@@ -17,7 +28,7 @@ export function DailyLogPage() {
   const { data: members = [] } = useQuery({
     queryKey: ['members'],
     queryFn: membersApi.list,
-    enabled: !isStudent, // 학생은 다른 사람 목록 조회 불가
+    enabled: !isStudent,
   });
   const { data: routines = [] } = useQuery({
     queryKey: ['routines'],
@@ -28,30 +39,53 @@ export function DailyLogPage() {
     queryFn: () => exercisesApi.list(),
   });
 
+  // 대상 + 날짜 (전체 화면 공통)
   const [memberId, setMemberId] = useState<number | null>(
     isStudent ? user.memberId ?? null : null,
   );
   const [date, setDate] = useState(todayISO());
+
+  // 수면 — 시간만
+  const [sleepHours, setSleepHours] = useState<string>('');
+
+  // 식단 — 3가지 체크
+  const [breakfast, setBreakfast] = useState(false);
+  const [lunch, setLunch] = useState(false);
+  const [dinner, setDinner] = useState(false);
+
+  // 운동
   const [condition, setCondition] = useState<number | ''>('');
   const [rpe, setRpe] = useState<number | ''>('');
   const [painArea, setPainArea] = useState('');
   const [note, setNote] = useState('');
-
-  // 한 줄에 운동 하나 — 세트/횟수/무게를 한꺼번에 입력
-  interface ExerciseEntry {
-    exerciseName: string;
-    setCount: number | '';
-    reps: number | '';
-    weight: number | '';
-    durationMin: number | ''; // 유산소
-    customText: string; // 유산소 메모
-  }
   const [entries, setEntries] = useState<ExerciseEntry[]>([]);
+  const [loadedRoutineName, setLoadedRoutineName] = useState<string | null>(null);
+
+  // 대상/날짜가 바뀌면 그날 기존 기록 불러와 채워줌
+  const { data: existingSleep } = useQuery({
+    queryKey: ['sleep', memberId, date],
+    queryFn: () => sleepApi.byDate(memberId!, date),
+    enabled: !!memberId,
+  });
+  const { data: existingDiet } = useQuery({
+    queryKey: ['diet', memberId, date],
+    queryFn: () => dietApi.byDate(memberId!, date),
+    enabled: !!memberId,
+  });
+
+  useEffect(() => {
+    setSleepHours(existingSleep?.hours ? String(existingSleep.hours) : '');
+  }, [memberId, date, existingSleep?.id]);
+
+  useEffect(() => {
+    setBreakfast(existingDiet?.breakfast ?? false);
+    setLunch(existingDiet?.lunch ?? false);
+    setDinner(existingDiet?.dinner ?? false);
+  }, [memberId, date, existingDiet?.id]);
 
   const isCardioName = (name: string) =>
     library.find((l) => l.name === name)?.bodyPart === '유산소';
 
-  // 입력된 운동을 저장용 sets[]로 펼치기
   const expandToSets = (): NonNullable<LogInput['sets']> => {
     const out: NonNullable<LogInput['sets']> = [];
     for (const e of entries) {
@@ -80,33 +114,71 @@ export function DailyLogPage() {
     return out;
   };
 
-  const create = useMutation({
-    mutationFn: () => {
+  // 통합 저장 — 수면 + 식단 + 운동을 한 번에
+  const saveAll = useMutation({
+    mutationFn: async () => {
       if (!memberId) throw new Error('대상을 선택하세요');
-      return workoutLogsApi.create({
-        memberId,
-        date,
-        condition: condition === '' ? null : Number(condition),
-        rpe: rpe === '' ? null : Number(rpe),
-        painArea: painArea || null,
-        note: note || null,
-        sets: expandToSets(),
-      });
+      const tasks: Promise<unknown>[] = [];
+
+      // 수면 — 시간 입력 있을 때만
+      if (sleepHours.trim() !== '') {
+        tasks.push(
+          sleepApi.save({
+            memberId,
+            date,
+            hours: Number(sleepHours),
+            note: null,
+          }),
+        );
+      }
+
+      // 식단 — 항상 저장 (체크 안 해도 false로 저장됨)
+      tasks.push(
+        dietApi.save({
+          memberId,
+          date,
+          breakfast,
+          lunch,
+          dinner,
+          note: null,
+        }),
+      );
+
+      // 운동 — 세트 있을 때만 저장
+      const sets = expandToSets();
+      if (sets.length > 0 || condition !== '' || rpe !== '' || painArea || note) {
+        tasks.push(
+          workoutLogsApi.create({
+            memberId,
+            date,
+            condition: condition === '' ? null : Number(condition),
+            rpe: rpe === '' ? null : Number(rpe),
+            painArea: painArea || null,
+            note: note || null,
+            sets,
+          }),
+        );
+      }
+
+      await Promise.all(tasks);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workout-logs'] });
-      // 폼 초기화
+      qc.invalidateQueries({ queryKey: ['sleep'] });
+      qc.invalidateQueries({ queryKey: ['diet'] });
+      qc.invalidateQueries({ queryKey: ['attendance'] });
+      // 운동 부분만 비우기 — 수면/식단은 저장된 상태 유지
       setEntries([]);
-      setNote('');
-      setPainArea('');
       setCondition('');
       setRpe('');
+      setPainArea('');
+      setNote('');
       alert('저장되었습니다');
     },
+    onError: (e) => {
+      alert(e instanceof Error ? e.message : '저장에 실패했습니다');
+    },
   });
-
-  // 루틴 자동 채우기 — 한 운동당 한 줄
-  const [loadedRoutineName, setLoadedRoutineName] = useState<string | null>(null);
 
   const fillFromRoutine = (routineId: number) => {
     const r = routines.find((rt) => rt.id === routineId);
@@ -115,27 +187,29 @@ export function DailyLogPage() {
       return;
     }
     if (!r.exercises || r.exercises.length === 0) {
-      alert(`"${r.name}" 루틴에 등록된 운동이 없어요. 관리자에게 문의해주세요.`);
+      alert(`"${r.name}" 루틴에 등록된 운동이 없어요.`);
       return;
     }
-    const newEntries: ExerciseEntry[] = r.exercises.map((ex) => ({
-      exerciseName: ex.exerciseName,
-      setCount: ex.targetSets ?? '',
-      reps: ex.targetReps ?? '',
-      weight: ex.targetWeight ?? '',
-      durationMin: '',
-      customText: '',
-    }));
-    setEntries(newEntries);
+    setEntries(
+      r.exercises.map((ex) => ({
+        exerciseName: ex.exerciseName,
+        setCount: ex.targetSets ?? '',
+        reps: ex.targetReps ?? '',
+        weight: ex.targetWeight ?? '',
+        durationMin: '',
+        customText: '',
+      })),
+    );
     setLoadedRoutineName(r.name);
-    // 2초 후 알림 사라짐
-    setTimeout(() => setLoadedRoutineName((curr) => (curr === r.name ? null : curr)), 2500);
+    setTimeout(
+      () => setLoadedRoutineName((curr) => (curr === r.name ? null : curr)),
+      2500,
+    );
   };
 
   const updateEntry = (idx: number, patch: Partial<ExerciseEntry>) => {
     setEntries((curr) => curr.map((e, i) => (i === idx ? { ...e, ...patch } : e)));
   };
-
   const addExercise = (name: string) => {
     if (!name.trim()) return;
     setEntries((curr) => [
@@ -150,30 +224,14 @@ export function DailyLogPage() {
       },
     ]);
   };
-
-  const removeEntry = (idx: number) => {
+  const removeEntry = (idx: number) =>
     setEntries((curr) => curr.filter((_, i) => i !== idx));
-  };
 
   return (
-    <div className="space-y-8 max-w-3xl">
-      {/* 수면 & 식단 — 운동 기록보다 먼저 */}
-      <section className="space-y-3">
-        <h1 className="text-2xl font-bold">오늘 수면 & 식단 기록</h1>
-        <SleepDietSection
-          memberId={memberId}
-          date={date}
-          onDateChange={setDate}
-          isStudent={isStudent}
-          students={members}
-          studentName={user?.name}
-        />
-      </section>
+    <div className="space-y-6 max-w-3xl">
+      <h1 className="text-2xl font-bold">오늘 기록</h1>
 
-      <section className="space-y-3">
-        <h1 className="text-2xl font-bold">오늘 운동 기록</h1>
-      </section>
-
+      {/* 1) 대상 + 날짜 (전체 공통) */}
       <Card>
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -185,7 +243,9 @@ export function DailyLogPage() {
             ) : (
               <Select
                 value={memberId ?? ''}
-                onChange={(e) => setMemberId(e.target.value ? Number(e.target.value) : null)}
+                onChange={(e) =>
+                  setMemberId(e.target.value ? Number(e.target.value) : null)
+                }
               >
                 <option value="">선택</option>
                 {members.map((m) => (
@@ -201,9 +261,63 @@ export function DailyLogPage() {
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
         </div>
+      </Card>
 
+      {/* 2) 수면 — 시간만 */}
+      <Card>
+        <h2 className="font-semibold mb-2">😴 수면</h2>
+        <div className="flex items-center gap-2">
+          <Label className="!mb-0 shrink-0">잠 잔 시간</Label>
+          <Input
+            type="number"
+            step="0.5"
+            min="0"
+            max="24"
+            placeholder="예: 7.5"
+            value={sleepHours}
+            onChange={(e) => setSleepHours(e.target.value)}
+            className="!w-32"
+          />
+          <span className="text-sm text-gray-500">시간</span>
+        </div>
+      </Card>
+
+      {/* 3) 식단 — 체크 */}
+      <Card>
+        <h2 className="font-semibold mb-2">🍽 식단</h2>
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              ['아침', breakfast, setBreakfast],
+              ['점심', lunch, setLunch],
+              ['저녁', dinner, setDinner],
+            ] as const
+          ).map(([label, value, setter]) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => setter(!value)}
+              className={
+                'px-4 py-2 rounded-lg text-sm font-medium border transition ' +
+                (value
+                  ? 'bg-emerald-600 border-emerald-600 text-white'
+                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50')
+              }
+            >
+              {value ? '✓ ' : ''}
+              {label} 먹음
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* 4) 운동 */}
+      <Card>
+        <h2 className="font-semibold mb-3">💪 운동</h2>
+
+        {/* 루틴 불러오기 */}
         {routines.length > 0 && (
-          <div className="mt-3">
+          <div className="mb-3">
             <Label>루틴 불러오기 (선택)</Label>
             <Select
               value=""
@@ -221,64 +335,28 @@ export function DailyLogPage() {
             </Select>
             {loadedRoutineName && (
               <p className="text-xs text-emerald-600 mt-1 anim-fade-in">
-                ✓ "{loadedRoutineName}" 불러옴 — 아래 운동 목록을 확인하세요
+                ✓ "{loadedRoutineName}" 불러옴
               </p>
             )}
           </div>
         )}
-      </Card>
 
-      <Card>
-        <h2 className="font-semibold mb-3">컨디션 / 강도</h2>
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <Label>컨디션 (1~5)</Label>
-            <Input
-              type="number"
-              min={1}
-              max={5}
-              value={condition}
-              onChange={(e) => setCondition(e.target.value ? Number(e.target.value) : '')}
-            />
-          </div>
-          <div>
-            <Label>RPE 강도 (1~10)</Label>
-            <Input
-              type="number"
-              min={1}
-              max={10}
-              value={rpe}
-              onChange={(e) => setRpe(e.target.value ? Number(e.target.value) : '')}
-            />
-          </div>
-          <div>
-            <Label>통증 부위</Label>
-            <Input value={painArea} onChange={(e) => setPainArea(e.target.value)} />
-          </div>
-        </div>
-      </Card>
-
-      <Card>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold">운동 기록</h2>
-        </div>
-
-        {/* 운동 추가 — 라이브러리 select 또는 직접 입력 */}
+        {/* 운동 추가 — 라이브러리 선택 + 직접 입력 같은 크기로 */}
         <ExerciseAdder library={library} onAdd={addExercise} />
 
+        {/* 입력된 운동 목록 */}
         {entries.length === 0 ? (
           <p className="text-sm text-gray-500 text-center py-4">
-            위 "루틴 불러오기"로 자동 채우거나, 위에서 운동을 하나씩 추가하세요.
+            루틴을 불러오거나 위에서 운동을 추가하세요.
           </p>
         ) : (
           <div className="space-y-2 mt-4 anim-fade-in">
-            {/* 테이블 헤더 */}
             <div className="hidden sm:grid grid-cols-12 gap-2 text-xs text-gray-500 px-2">
               <div className="col-span-4">운동</div>
               <div className="col-span-2 text-center">세트</div>
               <div className="col-span-2 text-center">횟수</div>
               <div className="col-span-3 text-center">무게(kg)</div>
-              <div className="col-span-1"></div>
+              <div className="col-span-1" />
             </div>
             {entries.map((entry, idx) => {
               const cardio = isCardioName(entry.exerciseName);
@@ -311,7 +389,7 @@ export function DailyLogPage() {
                       />
                       <Input
                         className="col-span-5 sm:col-span-4"
-                        placeholder="메모: 5km, 페이스 6분 등"
+                        placeholder="메모: 5km 등"
                         value={entry.customText}
                         onChange={(e) =>
                           updateEntry(idx, { customText: e.target.value })
@@ -369,26 +447,58 @@ export function DailyLogPage() {
             })}
           </div>
         )}
+
+        {/* 컨디션/RPE/통증 */}
+        <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t">
+          <div>
+            <Label>컨디션 (1~5)</Label>
+            <Input
+              type="number"
+              min={1}
+              max={5}
+              value={condition}
+              onChange={(e) =>
+                setCondition(e.target.value ? Number(e.target.value) : '')
+              }
+            />
+          </div>
+          <div>
+            <Label>RPE 강도 (1~10)</Label>
+            <Input
+              type="number"
+              min={1}
+              max={10}
+              value={rpe}
+              onChange={(e) => setRpe(e.target.value ? Number(e.target.value) : '')}
+            />
+          </div>
+          <div>
+            <Label>통증 부위</Label>
+            <Input value={painArea} onChange={(e) => setPainArea(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <Label>메모</Label>
+          <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
+        </div>
       </Card>
 
-      <Card>
-        <Label>메모</Label>
-        <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Card>
-
-      <div className="flex justify-end">
+      {/* 5) 한 번에 저장 */}
+      <div className="flex justify-end sticky bottom-4">
         <Button
-          onClick={() => create.mutate()}
-          disabled={!memberId || create.isPending}
+          onClick={() => saveAll.mutate()}
+          disabled={!memberId || saveAll.isPending}
+          className="!px-6 !py-3 !text-base shadow-lg"
         >
-          {create.isPending ? '저장 중...' : '기록 저장'}
+          {saveAll.isPending ? '저장 중...' : '💾 한 번에 저장'}
         </Button>
       </div>
     </div>
   );
 }
 
-// 운동 추가 — 라이브러리 select + 직접 입력 둘 다 지원
+// 운동 추가 — 라이브러리 select + 직접 입력 같은 너비
 function ExerciseAdder({
   library,
   onAdd,
@@ -398,17 +508,16 @@ function ExerciseAdder({
 }) {
   const [custom, setCustom] = useState('');
   return (
-    <div className="flex flex-wrap gap-2 items-end">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
       {library.length > 0 && (
-        <div className="flex-1 min-w-[200px]">
+        <div>
           <Label>라이브러리에서 선택</Label>
           <Select
-            defaultValue=""
+            value=""
             onChange={(e) => {
               if (e.target.value) {
                 const lib = library.find((l) => l.id === Number(e.target.value));
                 if (lib) onAdd(lib.name);
-                e.target.value = '';
               }
             }}
           >
@@ -422,7 +531,7 @@ function ExerciseAdder({
           </Select>
         </div>
       )}
-      <div className="flex-1 min-w-[200px]">
+      <div>
         <Label>또는 직접 입력</Label>
         <div className="flex gap-1">
           <Input
