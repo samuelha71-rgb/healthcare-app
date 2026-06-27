@@ -470,29 +470,18 @@ function ExerciseAdder({
         </div>
       )}
       <div>
-        <Label>또는 직접 입력</Label>
-        <div className="flex gap-1">
-          <Input
-            placeholder="운동 이름"
-            value={custom}
-            onChange={(e) => setCustom(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                onAdd(custom);
-                setCustom('');
-              }
-            }}
-          />
-          <Button
-            onClick={() => {
+        <Label>직접 입력</Label>
+        <Input
+          placeholder="운동 이름 입력 후 엔터"
+          value={custom}
+          onChange={(e) => setCustom(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && custom.trim()) {
               onAdd(custom);
               setCustom('');
-            }}
-            disabled={!custom.trim()}
-          >
-            추가
-          </Button>
-        </div>
+            }
+          }}
+        />
       </div>
     </div>
   );
