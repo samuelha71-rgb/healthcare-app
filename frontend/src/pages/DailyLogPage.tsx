@@ -283,6 +283,36 @@ export function DailyLogPage() {
       <Card>
         <h2 className="font-semibold mb-3">💪 운동</h2>
 
+        {/* 컨디션/RPE/통증 — 운동 추가 위에 */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div>
+            <Label>컨디션 (1~5)</Label>
+            <Input
+              type="number"
+              min={1}
+              max={5}
+              value={condition}
+              onChange={(e) =>
+                setCondition(e.target.value ? Number(e.target.value) : '')
+              }
+            />
+          </div>
+          <div>
+            <Label>힘든 정도 (1~10)</Label>
+            <Input
+              type="number"
+              min={1}
+              max={10}
+              value={rpe}
+              onChange={(e) => setRpe(e.target.value ? Number(e.target.value) : '')}
+            />
+          </div>
+          <div>
+            <Label>통증 부위</Label>
+            <Input value={painArea} onChange={(e) => setPainArea(e.target.value)} />
+          </div>
+        </div>
+
         {/* 운동 추가 — 라이브러리 선택 + 직접 입력 같은 크기로 */}
         <ExerciseAdder library={library} onAdd={addExercise} />
 
@@ -385,36 +415,6 @@ export function DailyLogPage() {
             })}
           </div>
         )}
-
-        {/* 컨디션/RPE/통증 */}
-        <div className="grid grid-cols-3 gap-3 mt-4">
-          <div>
-            <Label>컨디션 (1~5)</Label>
-            <Input
-              type="number"
-              min={1}
-              max={5}
-              value={condition}
-              onChange={(e) =>
-                setCondition(e.target.value ? Number(e.target.value) : '')
-              }
-            />
-          </div>
-          <div>
-            <Label>RPE 강도 (1~10)</Label>
-            <Input
-              type="number"
-              min={1}
-              max={10}
-              value={rpe}
-              onChange={(e) => setRpe(e.target.value ? Number(e.target.value) : '')}
-            />
-          </div>
-          <div>
-            <Label>통증 부위</Label>
-            <Input value={painArea} onChange={(e) => setPainArea(e.target.value)} />
-          </div>
-        </div>
 
         <div className="mt-3">
           <Label>메모</Label>
