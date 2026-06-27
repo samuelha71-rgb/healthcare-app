@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { membersApi } from '@/api/members';
 import { workoutLogsApi, type LogInput } from '@/api/workout-logs';
-import { routinesApi } from '@/api/routines';
 import { exercisesApi } from '@/api/exercises';
 import { sleepApi } from '@/api/sleep';
 import { dietApi } from '@/api/diet';
@@ -30,10 +29,6 @@ export function DailyLogPage() {
     queryFn: membersApi.list,
     enabled: !isStudent,
   });
-  const { data: routines = [] } = useQuery({
-    queryKey: ['routines'],
-    queryFn: routinesApi.list,
-  });
   const { data: library = [] } = useQuery({
     queryKey: ['exercises'],
     queryFn: () => exercisesApi.list(),
@@ -59,7 +54,6 @@ export function DailyLogPage() {
   const [painArea, setPainArea] = useState('');
   const [note, setNote] = useState('');
   const [entries, setEntries] = useState<ExerciseEntry[]>([]);
-  const [loadedRoutineName, setLoadedRoutineName] = useState<string | null>(null);
 
   // 대상/날짜가 바뀌면 그날 기존 기록 불러와 채워줌
   const { data: existingSleep } = useQuery({
@@ -180,33 +174,6 @@ export function DailyLogPage() {
     },
   });
 
-  const fillFromRoutine = (routineId: number) => {
-    const r = routines.find((rt) => rt.id === routineId);
-    if (!r) {
-      alert('루틴을 찾을 수 없어요. 새로고침 후 다시 시도해주세요.');
-      return;
-    }
-    if (!r.exercises || r.exercises.length === 0) {
-      alert(`"${r.name}" 루틴에 등록된 운동이 없어요.`);
-      return;
-    }
-    setEntries(
-      r.exercises.map((ex) => ({
-        exerciseName: ex.exerciseName,
-        setCount: ex.targetSets ?? '',
-        reps: ex.targetReps ?? '',
-        weight: ex.targetWeight ?? '',
-        durationMin: '',
-        customText: '',
-      })),
-    );
-    setLoadedRoutineName(r.name);
-    setTimeout(
-      () => setLoadedRoutineName((curr) => (curr === r.name ? null : curr)),
-      2500,
-    );
-  };
-
   const updateEntry = (idx: number, patch: Partial<ExerciseEntry>) => {
     setEntries((curr) => curr.map((e, i) => (i === idx ? { ...e, ...patch } : e)));
   };
@@ -314,32 +281,6 @@ export function DailyLogPage() {
       {/* 4) 운동 */}
       <Card>
         <h2 className="font-semibold mb-3">💪 운동</h2>
-
-        {/* 루틴 불러오기 */}
-        {routines.length > 0 && (
-          <div className="mb-3">
-            <Label>루틴 불러오기 (선택)</Label>
-            <Select
-              value=""
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v) fillFromRoutine(Number(v));
-              }}
-            >
-              <option value="">루틴을 선택해 운동을 자동 채우기</option>
-              {routines.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name} ({r.exercises?.length ?? 0}개 운동)
-                </option>
-              ))}
-            </Select>
-            {loadedRoutineName && (
-              <p className="text-xs text-emerald-600 mt-1 anim-fade-in">
-                ✓ "{loadedRoutineName}" 불러옴
-              </p>
-            )}
-          </div>
-        )}
 
         {/* 운동 추가 — 라이브러리 선택 + 직접 입력 같은 크기로 */}
         <ExerciseAdder library={library} onAdd={addExercise} />
