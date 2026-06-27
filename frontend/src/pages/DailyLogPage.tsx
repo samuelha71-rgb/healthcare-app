@@ -230,51 +230,51 @@ export function DailyLogPage() {
         </div>
       </Card>
 
-      {/* 2) 수면 — 시간만 */}
-      <Card>
-        <h2 className="font-semibold mb-2">😴 수면</h2>
-        <div className="flex items-center gap-2">
-          <Label className="!mb-0 shrink-0">잠 잔 시간</Label>
-          <Input
-            type="number"
-            step="0.5"
-            min="0"
-            max="24"
-            placeholder="예: 7.5"
-            value={sleepHours}
-            onChange={(e) => setSleepHours(e.target.value)}
-            className="!w-32"
-          />
-          <span className="text-sm text-gray-500">시간</span>
+      {/* 2) 수면 & 식단 — 한 카드 */}
+      <Card className="space-y-4">
+        <div>
+          <h2 className="font-semibold mb-2">😴 수면</h2>
+          <div className="flex items-center gap-2">
+            <Label className="!mb-0 shrink-0">잠 잔 시간</Label>
+            <Input
+              type="number"
+              step="0.5"
+              min="0"
+              max="24"
+              placeholder="예: 7.5"
+              value={sleepHours}
+              onChange={(e) => setSleepHours(e.target.value)}
+              className="!w-32"
+            />
+            <span className="text-sm text-gray-500">시간</span>
+          </div>
         </div>
-      </Card>
-
-      {/* 3) 식단 — 체크 */}
-      <Card>
-        <h2 className="font-semibold mb-2">🍽 식단</h2>
-        <div className="flex flex-wrap gap-2">
-          {(
-            [
-              ['아침', breakfast, setBreakfast],
-              ['점심', lunch, setLunch],
-              ['저녁', dinner, setDinner],
-            ] as const
-          ).map(([label, value, setter]) => (
-            <button
-              key={label}
-              type="button"
-              onClick={() => setter(!value)}
-              className={
-                'px-4 py-2 rounded-lg text-sm font-medium border transition ' +
-                (value
-                  ? 'bg-emerald-600 border-emerald-600 text-white'
-                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50')
-              }
-            >
-              {value ? '✓ ' : ''}
-              {label} 먹음
-            </button>
-          ))}
+        <div>
+          <h2 className="font-semibold mb-2">🍽 식단</h2>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                ['아침', breakfast, setBreakfast],
+                ['점심', lunch, setLunch],
+                ['저녁', dinner, setDinner],
+              ] as const
+            ).map(([label, value, setter]) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setter(!value)}
+                className={
+                  'px-4 py-2 rounded-lg text-sm font-medium border transition ' +
+                  (value
+                    ? 'bg-emerald-600 border-emerald-600 text-white'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50')
+                }
+              >
+                {value ? '✓ ' : ''}
+                {label} 먹음
+              </button>
+            ))}
+          </div>
         </div>
       </Card>
 
@@ -286,11 +286,7 @@ export function DailyLogPage() {
         <ExerciseAdder library={library} onAdd={addExercise} />
 
         {/* 입력된 운동 목록 */}
-        {entries.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-4">
-            루틴을 불러오거나 위에서 운동을 추가하세요.
-          </p>
-        ) : (
+        {entries.length === 0 ? null : (
           <div className="space-y-2 mt-4 anim-fade-in">
             <div className="hidden sm:grid grid-cols-12 gap-2 text-xs text-gray-500 px-2">
               <div className="col-span-4">운동</div>
@@ -390,7 +386,7 @@ export function DailyLogPage() {
         )}
 
         {/* 컨디션/RPE/통증 */}
-        <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t">
+        <div className="grid grid-cols-3 gap-3 mt-4">
           <div>
             <Label>컨디션 (1~5)</Label>
             <Input
@@ -432,7 +428,7 @@ export function DailyLogPage() {
           disabled={!memberId || saveAll.isPending}
           className="!px-6 !py-3 !text-base shadow-lg"
         >
-          {saveAll.isPending ? '저장 중...' : '💾 한 번에 저장'}
+          {saveAll.isPending ? '저장 중...' : '저장'}
         </Button>
       </div>
     </div>
