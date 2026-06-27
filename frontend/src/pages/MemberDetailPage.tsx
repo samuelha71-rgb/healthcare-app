@@ -5,11 +5,8 @@ import { membersApi } from '@/api/members';
 import { inbodyApi } from '@/api/inbody';
 import { workoutLogsApi } from '@/api/workout-logs';
 import { Badge, Button, Card, EmptyState } from '@/components/ui';
-import { AttendanceCalendar } from '@/features/AttendanceCalendar';
 import { InbodyChart } from '@/features/InbodyChart';
 import { InbodyForm } from '@/features/InbodyForm';
-import { PhotosSection } from '@/features/PhotosSection';
-import { GoalsSection } from '@/features/GoalsSection';
 import { MemberComparison } from '@/features/MemberComparison';
 import { LogDetailModal } from '@/features/LogDetailModal';
 import { SleepDietReport } from '@/features/SleepDietReport';
@@ -109,11 +106,6 @@ export function MemberDetailPage() {
       </div>
 
       <Card>
-        <h2 className="font-semibold mb-3">출석 캘린더 (최근 12주)</h2>
-        <AttendanceCalendar dates={attendance.map((a) => a.date)} />
-      </Card>
-
-      <Card>
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold">인바디 변화</h2>
           <Button onClick={() => setShowInbody(true)}>+ 측정 추가</Button>
@@ -185,9 +177,6 @@ export function MemberDetailPage() {
       </Card>
 
       <SleepDietReport memberId={id} />
-
-      <GoalsSection memberId={id} />
-      <PhotosSection memberId={id} />
 
       {openLog && (
         <LogDetailModal log={openLog} onClose={() => setOpenLog(null)} />
